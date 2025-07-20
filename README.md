@@ -6,7 +6,7 @@ AzazelAssistant is a local, privacy-respecting AI assistant built on top of [lla
 
 ## Features
 
- Runs fully locally (offline support)
+- Runs fully locally (offline support)
 - LLM backend using [llama.cpp](https://github.com/ggml-org/llama.cpp)
 - Easy model management via `models/` directory
 - Lightweight C++ architecture
