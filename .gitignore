@@ -1,0 +1,14 @@
+models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf
+bin/
+CMakeFiles/
+Testing/
+CMakeCache.txt
+Azazel
+Azazel_test
+Makefile
+cmake_install.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
+compile_commands.json
+lib/json
+lib/llama.cpp
