@@ -62,7 +62,7 @@ cd models
 pkgx huggingface-cli download unsloth/Phi-4-mini-instruct-GGUF  Phi-4-mini-instruct-Q6_K.gguf --local-dir .
 ````
 
-##Building the Assistant
+## Building the Assistant
 
 ```
 mkdir build
@@ -70,7 +70,7 @@ cd build
 cmake --build .
 ```
 
-##Project Structure
+## Project Structure
 
 ```
 AzazelAssistant/
