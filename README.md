@@ -59,14 +59,13 @@ Create the models/ directory and install the model using pkgx:
 ```
 mkdir models
 cd models
-pkgx huggingface-cli download unsloth/Phi-4-mini-instruct-GGUF  Phi-4-mini-instruct-Q6_K.gguf --local-dir .
+pkgx huggingface-cli download unsloth/Phi-4-mini-instruct-GGUF  Phi-4-mini-instruct-Q6_K_L.gguf --local-dir .
 ````
 
 ## Building the Assistant
 
 ```
-mkdir build
-cd build
+cmake ..
 cmake --build .
 ```
 
