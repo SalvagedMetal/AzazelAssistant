@@ -20,7 +20,8 @@ set(LLAMA_BUILD_COMMON OFF CACHE INTERNAL "")
 
 # Source files list
 set(SOURCE_DIR src/dateTime.cpp src/dateTime.h src/model.cpp src/model.h src/functionCall.cpp src/functionCall.h src/configReader.cpp src/configReader.h src/configVars.h)
-set(TESTS_DIR tests/tests.cpp tests/testDateTime.cpp tests/testDateTime.h tests/testModel.cpp tests/testModel.h tests/testFunctionCall.cpp tests/testFunctionCall.h)
+
+set(TEST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin/tests)
 
 add_subdirectory(lib/llama.cpp)
 add_subdirectory(lib/json)
@@ -30,14 +31,18 @@ add_executable(Azazel main.cpp ${SOURCE_DIR})
 target_link_libraries(Azazel PRIVATE llama)
 target_link_libraries(Azazel PRIVATE nlohmann_json::nlohmann_json)
 
-add_executable(testConfigReader tests/testConfigReader.cpp ${SOURCE_DIR})
-add_executable(Azazel_test ${TESTS_DIR} ${SOURCE_DIR})
-# Include external libraries
-target_link_libraries(testConfigReader PRIVATE llama)
-target_link_libraries(testConfigReader PRIVATE nlohmann_json::nlohmann_json)
-target_link_libraries(Azazel_test PRIVATE llama)
-target_link_libraries(Azazel_test PRIVATE nlohmann_json::nlohmann_json)
+# Main executable stays in the project root
+set_target_properties(Azazel PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # Enable testing
-add_test(NAME testConfigReader COMMAND testConfigReader)
-add_test(NAME Azazel_test COMMAND Azazel_test)
+set(TEST_EXECUTABLES testConfigReader testDateTime testModel testFunctionCall)
+
+# Add tests
+foreach(test_exec ${TEST_EXECUTABLES})
+    set(TEST_SOURCES_${test_exec} tests/${test_exec}.cpp ${SOURCE_DIR})
+    add_executable(${test_exec} ${TEST_SOURCES_${test_exec}})
+    target_link_libraries(${test_exec} PRIVATE llama)
+    target_link_libraries(${test_exec} PRIVATE nlohmann_json::nlohmann_json)
+    set_target_properties(${test_exec} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIR})
+    add_test(NAME ${test_exec} COMMAND ${test_exec})
+endforeach()

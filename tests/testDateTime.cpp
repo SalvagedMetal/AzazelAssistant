@@ -1,4 +1,8 @@
-#include "testDateTime.h"
+#include <iostream>
+#include <cassert>
+#include <cstring>
+
+#include "../src/dateTime.h"
 
 
 void testGetCurrentDateTime() {
@@ -36,3 +40,17 @@ void testFindFormat() {
     assert(std::strcmp(format.c_str(), DTFormat::DDMMYYYY)); // Check against the expected format
 }
 
+int main(int argc, char *argv[]) {
+    try { 
+        std::cout << "Running DateTime tests..." << std::endl;
+        testGetCurrentDateTime();
+        testGetDateTime();
+        testGetCurrentTimestamp();
+        testGetTimestamp();
+        testFindFormat();
+    } catch (const std::exception& e) {
+        std::cerr << "DateTime Test failed: " << e.what() << std::endl;
+        return 1; // Return a non-zero value to indicate failure
+    }
+    return 0;
+}

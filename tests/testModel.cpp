@@ -1,13 +1,17 @@
-#include "testModel.h"
+#include <iostream>
+#include <cassert>
+#include <cstring>
+
+#include "../src/model.h"
 
 void testModelInitialization() {
-    Model model("TestModel", "Testing", "models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
+    Model model("TestModel", "Testing", "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
                 "This is a test model, you can only respoond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
 }
 
 void testModelResponse() {
-    Model model("TestModel", "Testing", "models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
+    Model model("TestModel", "Testing", "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
     
@@ -18,7 +22,7 @@ void testModelResponse() {
 }
 
 void testModelChatHistory() {
-    Model model("TestModel", "Testing", "models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
+    Model model("TestModel", "Testing", "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
     
@@ -31,7 +35,7 @@ void testModelChatHistory() {
 }
 
 void testModelClearHistory() {
-    Model model("TestModel", "Testing", "models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
+    Model model("TestModel", "Testing", "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
     
@@ -44,4 +48,18 @@ void testModelClearHistory() {
     // Check if the history is cleared
     assert(model.getKeepHistory() == true);
     assert(model.getMessages().size() == 1); // Only the system message should remain
+}
+
+int main(int argc, char *argv[]) {
+    try {
+        std::cout << "Running Model tests..." << std::endl;
+        testModelInitialization();
+        testModelResponse();
+        testModelChatHistory();
+        testModelClearHistory();
+    } catch (const std::exception& e) {
+        std::cerr << "Model Test failed: " << e.what() << std::endl;
+        return 1; // Return a non-zero value to indicate failure
+    }
+    return 0;
 }
