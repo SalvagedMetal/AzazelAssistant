@@ -28,7 +28,7 @@ void testCallFunction(std::string modelPath) {
 int main(int argc, char *argv[]) {
     ConfigReader configReader;
     try {
-        configReader.readConfig("../config.json");
+        configReader.readConfig("../config.json", true);
         configReader.parseConfig();
     } catch (const std::exception &e) {
         std::cerr << "Error parsing config: " << e.what() << std::endl;

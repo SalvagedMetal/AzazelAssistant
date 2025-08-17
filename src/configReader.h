@@ -17,7 +17,7 @@ private:
     std::vector<ConfigVars::Model> models;
 
 public:
-    void readConfig(const std::string&);
+    void readConfig(const std::string&, const bool);
     void parseConfig();
 
     const std::vector<ConfigVars::Model> getModels() const;

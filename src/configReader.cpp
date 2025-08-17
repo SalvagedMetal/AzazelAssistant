@@ -1,6 +1,6 @@
 #include "configReader.h"
 
-void ConfigReader::readConfig(const std::string& filePath) {
+void ConfigReader::readConfig(const std::string& filePath, bool verbose) {
     std::ifstream configFile(filePath);
     if (!configFile.is_open()) {
         throw std::runtime_error("Could not open config file");
@@ -9,7 +9,10 @@ void ConfigReader::readConfig(const std::string& filePath) {
 
     configFile >> configJson;
     configData = configJson.dump(4); // Pretty print the JSON
-    std::cout << configJson.dump(4) << std::endl;
+    if (verbose) {
+        std::cout << "Config file read successfully: " << filePath << std::endl;
+        std::cout << configJson.dump(4) << std::endl;
+    }
     if (configJson.is_null()) {
         throw std::runtime_error("Config file is empty or invalid");
     }

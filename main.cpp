@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     // Load configuration
     ConfigReader configReader;
     try {
-        configReader.readConfig("config.json"); 
+        configReader.readConfig("config.json", isVerbose); 
         configReader.parseConfig();
     } catch (const std::exception &e) {
         std::cerr << "Error parsing config: " << e.what() << std::endl;

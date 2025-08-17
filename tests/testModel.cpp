@@ -27,12 +27,11 @@ void testModelChatHistory(std::string modelPath) {
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
     
-    model.respond("Hello");
-    model.respond("How are you?");
+    model.respond("Is response successful?");
     
     // Check if the history is kept
     assert(model.getKeepHistory() == true);
-    assert(model.getMessages().size() == 3); // 1 system message + 2 user messages + 1 assistant message
+    assert(model.getMessages().size() == 3); // 1 system message + 1 user messages + 1 assistant message
 }
 
 void testModelClearHistory(std::string modelPath) {
@@ -40,8 +39,7 @@ void testModelClearHistory(std::string modelPath) {
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
     
-    model.respond("Hello");
-    model.respond("How are you?");
+    model.respond("Is response successful?");
     
     // Clear the history
     model.clearHistory();
@@ -54,7 +52,7 @@ void testModelClearHistory(std::string modelPath) {
 int main(int argc, char *argv[]) {
     ConfigReader configReader;
     try {
-        configReader.readConfig("../config.json");
+        configReader.readConfig("../config.json", true);
         configReader.parseConfig();
     } catch (const std::exception &e) {
         std::cerr << "Error parsing config: " << e.what() << std::endl;

@@ -4,13 +4,13 @@
 
 void testReadConfig() {
     ConfigReader configReader;
-    configReader.readConfig("../config.json");
+    configReader.readConfig("../config.json", true);
     assert(!configReader.getModels().empty());
 }
 
 void testParseConfig() {
     ConfigReader configReader;
-    configReader.readConfig("../config.json");
+    configReader.readConfig("../config.json", true);
     configReader.parseConfig();
     const auto models = configReader.getModels();
     assert(models.size() >= 1);
@@ -20,7 +20,7 @@ void testParseConfig() {
 
 void testModelFields() {
     ConfigReader configReader;
-    configReader.readConfig("../config.json");
+    configReader.readConfig("../config.json", true);
     configReader.parseConfig();
     const auto models = configReader.getModels();
     for (const auto& model : models) {
