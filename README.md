@@ -1,5 +1,5 @@
 # AzazelAssistant
-## v0.1 Basic Working Release
+## v0.2 Configuration and Modularised Testing
 AzazelAssistant is a local, privacy-respecting AI assistant built on top of [llama.cpp](https://github.com/ggml-org/llama.cpp) for efficient LLM inference and [nlohmann/json](https://github.com/nlohmann/json) for lightweight JSON handling. It provides a simple, fast, and extensible interface for interacting with large language models (LLMs) on your own machine—no cloud required.
 
 ---
@@ -65,9 +65,16 @@ pkgx huggingface-cli download bartowski/microsoft_Phi-4-mini-instruct-GGUF  micr
 ## Building the Assistant
 
 ```
-cmake ..
-cmake --build .
+cmake -B build -S .
+cd build
+make
+cd ..
 ```
+In order to run the application, once you are in the root directory of the project use
+```
+./Azazel
+```
+to run it.
 
 ## Project Structure
 
@@ -82,10 +89,12 @@ AzazelAssistant/
 ├── tests/                   # Unit test files
 ```
 
-## External Libraries
-### ggml-org/llama.cpp - High-performance inference for LLaMA models in C/C++
-https://github.com/ggml-org/llama.cpp
-### nlohmann/json - JSON for Modern C++
-https://github.com/nlohmann/json
+## Testing
+This project uses the CTest library to run the function tests.
+```
+cd build
+ctest
+```
+
 ## License
 Check the LICENSE file for licensing details.
