@@ -85,7 +85,6 @@ AzazelAssistant/
 │   └── json/                # JSON library
 ├── models/                  # Place GGUF models here
 ├── src/                     # Core source code
-├── include/                 # Headers
 ├── tests/                   # Unit test files
 ```
 
