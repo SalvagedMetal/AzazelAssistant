@@ -5,6 +5,7 @@
 #include "src/dateTime.h"
 #include "src/model.h"
 #include "src/functionCall.h"
+#include "src/configReader.h"
 
 //using namespace std::chrono_literals;
 
@@ -29,27 +30,62 @@ int main(int argc, char *argv[]) {
             isVerbose = true;
         }
     }
-
-    // Initialize the models
-    Model commandModel;
-    commandModel.setVerbose(isVerbose);
+    // Load configuration
+    ConfigReader configReader;
     try {
-        commandModel.init();
+        configReader.readConfig("config.json"); 
+        configReader.parseConfig();
     } catch (const std::exception &e) {
-        std::cerr << "Error initializing command model: " << e.what() << std::endl;
+        std::cerr << "Error parsing config: " << e.what() << std::endl;
         return 1;
     }
-
-    Model chatModel("Phi-4-mini-instruct-Q6_K_L", 
-                    "Chatbot", 
-                    "models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 
-                    0, 2048, 
-                    "You are Azazel, a helpful assistant. Respond in a friendly manner and provide useful information.", 
-                    0.60f, 0.05f, 0.95f, 0.95f, 0.95f, 40, true, isVerbose);
+    // Initialize the models
+    Model commandModel;
+    Model chatModel;
+    for (const auto& modelConfig : configReader.getModels()) {
+        if (modelConfig.purpose == "Command") {
+            commandModel.setModelName(modelConfig.name);
+            commandModel.setModelPurpose(modelConfig.purpose);
+            commandModel.setModelPath(modelConfig.path);
+            commandModel.setNGL(modelConfig.ngl);
+            commandModel.setNCTX(modelConfig.n_ctx);
+            commandModel.setInitMessage(modelConfig.init_message);
+            commandModel.setTemp(modelConfig.temp);
+            commandModel.setMinP(modelConfig.min_p);
+            commandModel.setTopP(modelConfig.top_p);
+            commandModel.setTypical(modelConfig.typical);
+            commandModel.setDist(modelConfig.dist);
+            commandModel.setTopK(modelConfig.top_k);
+            commandModel.setKeepHistory(modelConfig.keepHistory);
+            commandModel.setVerbose(isVerbose);
+            if (isVerbose) {
+                std::cout << "Command Model initialized: " << commandModel.getModelName() << std::endl;
+            }
+        } else if (modelConfig.purpose == "Chat") {
+            chatModel.setModelName(modelConfig.name);
+            chatModel.setModelPurpose(modelConfig.purpose);
+            chatModel.setModelPath(modelConfig.path);
+            chatModel.setNGL(modelConfig.ngl);
+            chatModel.setNCTX(modelConfig.n_ctx);
+            chatModel.setInitMessage(modelConfig.init_message);
+            chatModel.setTemp(modelConfig.temp);
+            chatModel.setMinP(modelConfig.min_p);
+            chatModel.setTopP(modelConfig.top_p);
+            chatModel.setTypical(modelConfig.typical);
+            chatModel.setDist(modelConfig.dist);
+            chatModel.setTopK(modelConfig.top_k);
+            chatModel.setKeepHistory(modelConfig.keepHistory);
+            chatModel.setVerbose(isVerbose);
+            if (isVerbose) {
+                std::cout << "Chat Model initialized: " << chatModel.getModelName() << std::endl;
+            }
+        }
+    }
     try {
+        commandModel.init();
         chatModel.init();
     } catch (const std::exception &e) {
-        std::cerr << "Error initializing chat model: " << e.what() << std::endl;
+        std::cerr << "Error initializing command model: " << e.what() << std::endl;
         return 1;
     }
     std::cout << "Azazel Assistant is running...\n";
@@ -64,17 +100,11 @@ int main(int argc, char *argv[]) {
             std::cerr << "Error processing input: " << e.what() << std::endl;
         }
 
-        if (isVerbose) {
+        if (isVerbose)
             std::cout << commandString << std::endl;
-        }
 
         try {
             isValid = FunctionCall::isValidCommand(commandString, isVerbose);
-        } catch (const std::exception &e) {
-            std::cerr << "Error validating command: " << e.what() << std::endl;
-            return 1;
-        }
-        try {
             if (isValid) {
                 try {
                     response = FunctionCall::call(commandString, chatModel, isVerbose);
@@ -89,6 +119,6 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    
+
     return 0;
 }

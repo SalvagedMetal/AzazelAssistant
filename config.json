@@ -1,0 +1,34 @@
+{
+    "models": [ 
+        {
+            "name": "Phi-4-mini-instruct-Q6_K_L",
+            "path": "models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf",
+            "purpose": "Command",
+            "ngl": 0,
+            "n_ctx": 2048,
+            "temp": 0.1,
+            "min_p": 0.05,
+            "top_p": 0.95,
+            "typical": 0.95,
+            "top_k": 10,
+            "dist": "default",
+            "init_message": "Always respond with a single valid JSON command from the following list: {\"command\": \"chat\", \"arguments\": [\"<user prompt>\"], {\"command\": \"getCurrentDate\", \"arguments\": []} Do not include any explanation. Only return one command object. Valid Examples: User: What is the current time? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What time is it? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What is the current date? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: What date is it? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: Hello, how are you? Assistant: {\"command\": \"chat\", \"arguments\": [\"Hello, how are you?\"]}, User: Can you give me a recpie for a cake? Assistant: {\"command\": \"chat\", \"arguments\": [\"Can you give me a recpie for a cake?\"]}.",
+            "keepHistory": false
+        },
+        {
+            "name": "Phi-4-mini-instruct-Q6_K_L",
+            "path": "models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf",
+            "purpose": "Chat",
+            "ngl": 0,
+            "n_ctx": 2048,
+            "temp": 0.60,
+            "min_p": 0.05,
+            "top_p": 0.95,
+            "typical": 0.95,
+            "top_k": 40,
+            "dist": "default",
+            "init_message": "You are Azazel, a helpful assistant. Respond in a friendly manner and provide useful information.",
+            "keepHistory": true       
+        }   
+    ]
+}

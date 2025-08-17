@@ -5,6 +5,7 @@ Testing/
 CMakeCache.txt
 Azazel
 Azazel_test
+testConfigReader
 Makefile
 cmake_install.cmake
 CTestTestfile.cmake
