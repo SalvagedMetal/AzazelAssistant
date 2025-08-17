@@ -3,15 +3,16 @@
 #include <cstring>
 
 #include "../src/model.h"
+#include "../src/configReader.h"
 
-void testModelInitialization() {
-    Model model("TestModel", "Testing", "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
+void testModelInitialization(std::string modelPath) {
+    Model model("TestModel", "Testing", "../" + modelPath, 0, 2048, 
                 "This is a test model, you can only respoond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
 }
 
-void testModelResponse() {
-    Model model("TestModel", "Testing", "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
+void testModelResponse(std::string modelPath) {
+    Model model("TestModel", "Testing", "../" + modelPath, 0, 2048, 
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
     
@@ -21,8 +22,8 @@ void testModelResponse() {
     assert(response == "Test response"); // Check if the response matches the expected output
 }
 
-void testModelChatHistory() {
-    Model model("TestModel", "Testing", "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
+void testModelChatHistory(std::string modelPath) {
+    Model model("TestModel", "Testing", "../" + modelPath, 0, 2048, 
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
     
@@ -34,8 +35,8 @@ void testModelChatHistory() {
     assert(model.getMessages().size() == 3); // 1 system message + 2 user messages + 1 assistant message
 }
 
-void testModelClearHistory() {
-    Model model("TestModel", "Testing", "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
+void testModelClearHistory(std::string modelPath) {
+    Model model("TestModel", "Testing", "../" + modelPath, 0, 2048, 
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
     
@@ -51,12 +52,20 @@ void testModelClearHistory() {
 }
 
 int main(int argc, char *argv[]) {
+    ConfigReader configReader;
+    try {
+        configReader.readConfig("../config.json");
+        configReader.parseConfig();
+    } catch (const std::exception &e) {
+        std::cerr << "Error parsing config: " << e.what() << std::endl;
+        return 1;
+    }
     try {
         std::cout << "Running Model tests..." << std::endl;
-        testModelInitialization();
-        testModelResponse();
-        testModelChatHistory();
-        testModelClearHistory();
+        testModelInitialization(configReader.getModels()[0].path);
+        testModelResponse(configReader.getModels()[0].path);
+        testModelChatHistory(configReader.getModels()[0].path);
+        testModelClearHistory(configReader.getModels()[0].path);
     } catch (const std::exception& e) {
         std::cerr << "Model Test failed: " << e.what() << std::endl;
         return 1; // Return a non-zero value to indicate failure

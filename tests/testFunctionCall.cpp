@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "../src/functionCall.h"
+#include "../src/configReader.h"
 
 void testIsValidCommand() {
     std::string validCommand = R"({"command": "chat", "arguments": ["Hello, how are you?"]})";
@@ -12,8 +13,8 @@ void testIsValidCommand() {
     assert(FunctionCall::isValidCommand(invalidCommand, true) == false);
 }
 
-void testCallFunction() {
-    Model model("TestModel", "Testing", "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf", 0, 2048, 
+void testCallFunction(std::string modelPath) {
+    Model model("TestModel", "Testing", "../" + modelPath, 0, 2048, 
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
 
@@ -25,10 +26,18 @@ void testCallFunction() {
 }
 
 int main(int argc, char *argv[]) {
+    ConfigReader configReader;
+    try {
+        configReader.readConfig("../config.json");
+        configReader.parseConfig();
+    } catch (const std::exception &e) {
+        std::cerr << "Error parsing config: " << e.what() << std::endl;
+        return 1;
+    }
     try {
         std::cout << "Running FunctionCall tests..." << std::endl;
         testIsValidCommand();
-        testCallFunction();
+        testCallFunction(configReader.getModels()[0].path);
     } catch (const std::exception& e) {
         std::cerr << "FunctionCall Test failed: " << e.what() << std::endl;
         return 1; // Return a non-zero value to indicate failure
