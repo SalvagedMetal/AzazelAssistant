@@ -1,13 +1,8 @@
-#include <iostream>
-#include <chrono>
-#include <thread>
-
 #include "src/dateTime.h"
 #include "src/model.h"
 #include "src/functionCall.h"
 #include "src/configReader.h"
-
-//using namespace std::chrono_literals;
+#include "src/mqtt.h"
 
 int main(int argc, char *argv[]) {
 
@@ -39,6 +34,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "Error parsing config: " << e.what() << std::endl;
         return 1;
     }
+
     // Initialize the models
     Model commandModel;
     Model chatModel;
