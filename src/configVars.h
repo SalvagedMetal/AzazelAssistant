@@ -1,4 +1,5 @@
-#include "model.h"
+#ifndef CONFIGVARS_H
+#define CONFIGVARS_H
 
 namespace ConfigVars {
     struct Model {
@@ -16,4 +17,29 @@ namespace ConfigVars {
         std::string init_message;
         bool keepHistory;
     };
+
+    struct MQTTCommand {
+        std::string name;
+        std::string type; // "publish" or "subscribe"
+        std::string topic;
+        int qos;
+        bool retain; // only for publish
+        std::string func;
+        int NArgs;
+    };
+
+    struct MQTTConfig {
+        bool enabled;
+        std::string broker_ip;
+        int broker_port;
+        int keepalive;
+        std::string username;
+        std::string password;
+        std::string client_id;
+        bool clean_session;
+        std::vector<MQTTCommand> commands;
+    };
 };
+
+
+#endif

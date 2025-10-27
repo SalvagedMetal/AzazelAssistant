@@ -1,5 +1,5 @@
 {
-    "models": [ 
+    "models": [
         {
             "name": "Phi-4-mini-instruct-Q6_K_L",
             "path": "models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf",
@@ -30,5 +30,35 @@
             "init_message": "You are Azazel, a helpful assistant. Respond in a friendly manner and provide useful information.",
             "keepHistory": true       
         }   
-    ]
+    ],
+    "mqtt": {
+        "enabled": true,
+        "broker_ip": "localhost",
+        "broker_port": 1883,
+        "username": "",
+        "password": "",
+        "client_id": "AzazelClient",
+        "keepalive": 60,
+        "clean_session": true,
+        "commands" : [
+            {
+                "name" : "testSub",
+                "type" : "subscribe",
+                "topic" : "azazel/testSub",
+                "qos" : 1,
+                "retain" : false,
+                "function" : "",
+                "NArgs" : 0
+            },
+            {
+                "name" : "testResponse",
+                "type" : "publish",
+                "topic" : "azazel/testResponse",
+                "qos" : 1,
+                "retain" : false,
+                "function" : "",
+                "NArgs" : 0
+            }
+        ]
+    }
 }

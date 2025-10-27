@@ -35,6 +35,26 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Initialize MQTT client
+    ConfigVars::MQTTConfig mqttConfig = configReader.getMQTT().at(0);
+    MQTTClient client;
+    client.setVerbose(isVerbose);
+    if (mqttConfig.enabled) {
+        if (isVerbose) {
+            std::cout << "Initializing MQTT client..." << std::endl;
+        }
+        try {
+            client.Init(mqttConfig.username, mqttConfig.password, mqttConfig.client_id, mqttConfig.clean_session);
+            client.Start(mqttConfig.broker_ip, mqttConfig.broker_port, mqttConfig.keepalive);
+        } catch (const std::exception &e) {
+            std::runtime_error("Error initializing MQTT client: " + std::string(e.what()));
+            return 1;
+        }
+    }
+    
+    
+    MQTTQueue<std::string> queue;
+
     // Initialize the models
     Model commandModel;
     Model chatModel;

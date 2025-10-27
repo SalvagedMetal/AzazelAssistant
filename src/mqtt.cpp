@@ -108,12 +108,16 @@ void MQTTClient::Init(std::string usr, std::string pwd, std::string id, bool cle
         throw std::runtime_error("Error: Out of memory.");
     }
 
-    rc = mosquitto_username_pw_set(mosq, usr.c_str(), pwd.c_str());
-    if(rc != MOSQ_ERR_SUCCESS) {
+    if (!usr.empty() && !pwd.empty())
+        rc = mosquitto_username_pw_set(mosq, usr.c_str(), pwd.c_str());
+    else 
+        rc = mosquitto_username_pw_set(mosq, nullptr, nullptr);
+
+    if (rc != MOSQ_ERR_SUCCESS) {
         mosquitto_destroy(mosq);
         throw std::runtime_error("Error setting username/password: " + std::string(mosquitto_strerror(rc)));
     }
-    if (isVerbose)
+    if (isVerbose && (!usr.empty() && !pwd.empty()))
         std::cout << "Mosquitto password set" << std::endl;
 
 
