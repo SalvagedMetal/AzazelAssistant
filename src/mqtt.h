@@ -5,10 +5,10 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
-#include <random>
 #include <string>
 #include <mutex>
 #include <condition_variable>
+#include <queue>
 
 class MQTTClient {
 private:
@@ -18,6 +18,7 @@ private:
     static std::mutex mtx;
     static std::condition_variable cv;
     bool messageFlag = false;
+    static bool isVerbose;
 
     // Callback called when the client receives a CONNACK message from the broker.
     static void onConnect(struct mosquitto *mosq, void *obj, int reason_code);
@@ -30,8 +31,8 @@ private:
 public:
     MQTTClient() = default;
     ~MQTTClient() { Destroy(); };
-    // This function pretends to read some data from a sensor and publish it.
-    void Publish(int *mid, const uint8_t* payload, int payloadLen, const std::string& topic, int qos, bool retain);
+    // This function publishes a message to a topic.
+    std::string Publish(int *mid, const uint8_t* payload, int payloadLen, const std::string& topic, int qos, bool retain);
 
     // This function subscribes to a topic and waits for a message.
     std::string Subscribe(const char* topic, int qos);
@@ -44,11 +45,23 @@ public:
     void Disconnect();
     void Destroy();
 
+    //setter
+    void setVerbose(bool verbose) { isVerbose = verbose; }
+
+    //getter
+    bool getVerbose() const { return isVerbose; }
+
 };
 
-namespace MQTTTask {
-    std::string setLight(bool state);
-    std::string getTest();
+template <typename T>
+class MQTTQueue {
+private:
+    std::queue<T> queue;
+    std::mutex mtx;
+    std::condition_variable cv;
+public:
+    void push(T item);
+    T pop();
 };
 
 #endif
