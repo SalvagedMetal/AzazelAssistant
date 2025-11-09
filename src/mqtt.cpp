@@ -1,9 +1,15 @@
 #include "mqtt.h"
+#include "mqttQueue.h"
 
 std::mutex MQTTClient::mtx;
 std::condition_variable MQTTClient::cv;
-template class MQTTQueue<std::string>;
+template class MQTTQueue<std::function<std::string()>>;
 bool MQTTClient::isVerbose = false;
+std::thread MQTTClient::mqttWorkerThread;
+
+//extern declaration
+std::atomic<bool> mqttRunning{true};
+MQTTQueue<std::function<std::string()>> mqttTaskQueue;
 
 void MQTTClient::onConnect(struct mosquitto *mosq, void *obj, int reason_code)
 {
@@ -36,9 +42,10 @@ void MQTTClient::onMessage(struct mosquitto *mosq, void *userdata, const struct 
 }
 
 
-std::string MQTTClient::Publish(int *mid, const uint8_t* payload, int payloadLen, const std::string& topic, int qos, bool retain)
+std::string MQTTClient::Publish(int *mid, const std::string& payload, int payloadLen, const std::string& topic, int qos, bool retain)
 {
-    rc = mosquitto_publish(mosq, mid, topic.c_str(), payloadLen, payload, qos, retain);
+    std::lock_guard<std::mutex> lock(mtx);
+    rc = mosquitto_publish(mosq, mid, topic.c_str(), payloadLen, payload.c_str(), qos, retain);
     if(rc != MOSQ_ERR_SUCCESS) {
         throw std::runtime_error("Error publishing: " + std::string(mosquitto_strerror(rc)));
     }
@@ -46,7 +53,7 @@ std::string MQTTClient::Publish(int *mid, const uint8_t* payload, int payloadLen
 }
 
 
-std::string MQTTClient::Subscribe(const char* topic, int qos)
+std::string MQTTClient::Subscribe(const std::string& topic, int qos)
 {
     // Reset state before subscribing
     {
@@ -57,7 +64,7 @@ std::string MQTTClient::Subscribe(const char* topic, int qos)
 
     mosquitto_message_callback_set(mosq, onMessage);
 
-    int rc = mosquitto_subscribe(mosq, nullptr, topic, qos);
+    int rc = mosquitto_subscribe(mosq, nullptr, topic.c_str(), qos);
     if (rc != MOSQ_ERR_SUCCESS) {
         throw std::runtime_error("Subscribe failed: " + std::string(mosquitto_strerror(rc)));
     }
@@ -81,7 +88,13 @@ void MQTTClient::Disconnect() {
 
 
 void MQTTClient::Destroy() {
+    // ensure worker stopped
+    mqttRunning.store(false);
+    mqttTaskQueue.push(std::function<std::string()>()); // wake worker if blocked
+    if (mqttWorkerThread.joinable()) mqttWorkerThread.join();
+
     mosquitto_destroy(mosq);
+    mosq = nullptr;
     mosquitto_lib_cleanup();
     if (isVerbose)
         std::cout << "Mosquitto client destroyed and library cleaned up." << std::endl;
@@ -92,6 +105,16 @@ void MQTTClient::Stop(bool force) {
     rc = mosquitto_loop_stop(mosq, force);
     if(rc != MOSQ_ERR_SUCCESS) {
         throw std::runtime_error("Error: " + std::string(mosquitto_strerror(rc)));
+    }
+    // signal worker to stop and wake it
+    mqttRunning.store(false);
+    mqttTaskQueue.push(std::function<std::string()>()); // push empty task to wake the worker
+
+    if (mqttWorkerThread.joinable()) {
+        mqttWorkerThread.join();
+        if (isVerbose) {
+            std::cout << "MQTT Worker thread stopped." << std::endl;
+        }
     }
 }
 
@@ -124,12 +147,13 @@ void MQTTClient::Init(std::string usr, std::string pwd, std::string id, bool cle
     mosquitto_connect_callback_set(mosq, onConnect);
     mosquitto_publish_callback_set(mosq, onPublish);
     mosquitto_message_callback_set(mosq, onMessage);
+    initialized = true;
 }
 
 
 void MQTTClient::Start(std::string ip, int port, int keepalive) {
     bool connectFlag = false;
-    while (connectFlag == false) {
+    while (!connectFlag) {
         if (isVerbose)
             std::cout << "Mosquitto connecting..." << std::endl;
         rc = mosquitto_connect(mosq, ip.c_str(), port, keepalive);
@@ -144,6 +168,14 @@ void MQTTClient::Start(std::string ip, int port, int keepalive) {
     if(rc != MOSQ_ERR_SUCCESS) {
         mosquitto_destroy(mosq);
         throw std::runtime_error("Error: " + std::string(mosquitto_strerror(rc)));
+    }
+     if (!mqttWorkerThread.joinable()) {
+        mqttRunning.store(true);
+        mqttWorkerThread = std::thread(
+            &MQTTQueue<std::function<std::string()>>::mqttWorker, &mqttTaskQueue, std::ref(*this));
+        if (isVerbose) {
+            std::cout << "MQTT Worker thread started." << std::endl;
+        }
     }
 }
 
@@ -161,9 +193,28 @@ void MQTTClient::Start(std::string ip, int port, int keepalive) {
     T MQTTQueue<T>::pop()
     {
         std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [this]() { return !queue.empty(); });
+        cv.wait(lock, [this]() { return !queue.empty() || !mqttRunning.load(); });
+        if (queue.empty()) {
+            return T(); // return default if stopping
+        }
         T item = queue.front();
         queue.pop();
 
         return item;
+    }
+
+
+    template<typename T>
+    void MQTTQueue<T>::mqttWorker(MQTTClient& mqtt) {
+        while (mqttRunning.load()) {
+            T task = pop();
+            try {
+                if (!task) {
+                    continue; // Skip if the task is empty
+                }
+                task(); // Run the task safely
+            } catch (const std::exception& e) {
+                std::cerr << "MQTT Worker Error: " << e.what() << std::endl;
+            }
+        }
     }

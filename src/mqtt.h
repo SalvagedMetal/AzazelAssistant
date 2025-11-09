@@ -9,6 +9,11 @@
 #include <mutex>
 #include <condition_variable>
 #include <queue>
+#include <functional>
+#include <atomic>
+#include <thread>
+
+extern std::atomic<bool> mqttRunning;
 
 class MQTTClient {
 private:
@@ -19,6 +24,8 @@ private:
     static std::condition_variable cv;
     bool messageFlag = false;
     static bool isVerbose;
+    static std::thread mqttWorkerThread;
+    bool initialized = false;
 
     // Callback called when the client receives a CONNACK message from the broker.
     static void onConnect(struct mosquitto *mosq, void *obj, int reason_code);
@@ -32,10 +39,10 @@ public:
     MQTTClient() = default;
     ~MQTTClient() { Destroy(); };
     // This function publishes a message to a topic.
-    std::string Publish(int *mid, const uint8_t* payload, int payloadLen, const std::string& topic, int qos, bool retain);
+    std::string Publish(int *mid, const std::string& payload, int payloadLen, const std::string& topic, int qos, bool retain);
 
     // This function subscribes to a topic and waits for a message.
-    std::string Subscribe(const char* topic, int qos);
+    std::string Subscribe(const std::string& topic, int qos);
 
     // starting
     void Init(std::string usr, std::string pwd, std::string id, bool cleanSession);
@@ -50,7 +57,7 @@ public:
 
     //getter
     bool getVerbose() const { return isVerbose; }
-
+    bool isInitialized() const { return initialized; }
 };
 
 template <typename T>
@@ -62,6 +69,7 @@ private:
 public:
     void push(T item);
     T pop();
+    void mqttWorker(MQTTClient& client);
 };
 
 #endif

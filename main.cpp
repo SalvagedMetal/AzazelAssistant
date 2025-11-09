@@ -1,8 +1,10 @@
 #include "src/dateTime.h"
 #include "src/model.h"
 #include "src/functionCall.h"
-#include "src/configReader.h"
 #include "src/mqtt.h"
+
+#include <thread>
+#include <chrono>
 
 int main(int argc, char *argv[]) {
 
@@ -36,7 +38,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Initialize MQTT client
-    ConfigVars::MQTTConfig mqttConfig = configReader.getMQTT().at(0);
+    ConfigVars::MQTTConfig mqttConfig = configReader.getMQTTConfig();
     MQTTClient client;
     client.setVerbose(isVerbose);
     if (mqttConfig.enabled) {
@@ -45,13 +47,16 @@ int main(int argc, char *argv[]) {
         }
         try {
             client.Init(mqttConfig.username, mqttConfig.password, mqttConfig.client_id, mqttConfig.clean_session);
-            client.Start(mqttConfig.broker_ip, mqttConfig.broker_port, mqttConfig.keepalive);
+            if (client.isInitialized()) {
+                client.Start(mqttConfig.broker_ip, mqttConfig.broker_port, mqttConfig.keepalive);
+            } else {
+                throw std::runtime_error("MQTT client initialization failed.");
+            }
         } catch (const std::exception &e) {
-            std::runtime_error("Error initializing MQTT client: " + std::string(e.what()));
+            std::cerr << "Error initializing MQTT client: " << e.what() << std::endl;
             return 1;
         }
     }
-    
     
     MQTTQueue<std::string> queue;
 
@@ -107,7 +112,8 @@ int main(int argc, char *argv[]) {
     std::cout << "Azazel Assistant is running...\n";
 
     // Main loop to process user input
-    while (true) {    
+    
+    while (true) {
         std::cout << "> ";
         getline(std::cin, userInput);
         try {
@@ -123,7 +129,8 @@ int main(int argc, char *argv[]) {
             isValid = FunctionCall::isValidCommand(commandString, isVerbose);
             if (isValid) {
                 try {
-                    response = FunctionCall::call(commandString, chatModel, isVerbose);
+                    ConfigVars::config config = configReader.getConfig();
+                    response = FunctionCall::call(commandString, chatModel, isVerbose, client, config);
                 } catch (const std::exception &e) {
                     std::cerr << "Error executing command: " << e.what() << std::endl;
                     return 1;
@@ -135,6 +142,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
+    
 
     return 0;
 }

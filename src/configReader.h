@@ -17,15 +17,15 @@ private:
     std::string configData;
     json configJson;
     std::vector<ConfigVars::Model> models;
-    std::vector<ConfigVars::MQTTConfig> mqtt;
+    ConfigVars::MQTTConfig mqtt;
     std::vector<ConfigVars::MQTTCommand> mqttCommands;
+    ConfigVars::config config;
 
 public:
-    void readConfig(const std::string&, const bool);
+    void readConfig(const std::string& filePath, const bool isVerbose);
     void parseConfig();
 
+    const ConfigVars::config getConfig() const;
     const std::vector<ConfigVars::Model> getModels() const;
-    const std::vector<ConfigVars::MQTTConfig> getMQTT() const;
-    const std::vector<ConfigVars::MQTTCommand> getMQTTCommand() const;
-    const std::string getConfigData() const;
+    const ConfigVars::MQTTConfig getMQTTConfig() const;
 };

@@ -24,7 +24,7 @@ namespace ConfigVars {
         std::string topic;
         int qos;
         bool retain; // only for publish
-        std::string func;
+        std::string payload;
         int NArgs;
     };
 
@@ -38,6 +38,12 @@ namespace ConfigVars {
         std::string client_id;
         bool clean_session;
         std::vector<MQTTCommand> commands;
+    };
+
+    // Overall configuration structure
+    struct config {
+        std::vector<Model> models;
+        MQTTConfig mqtt;
     };
 };
 

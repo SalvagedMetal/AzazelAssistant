@@ -12,7 +12,7 @@
             "typical": 0.95,
             "top_k": 10,
             "dist": "default",
-            "init_message": "Always respond with a single valid JSON command from the following list: {\"command\": \"chat\", \"arguments\": [\"<user prompt>\"], {\"command\": \"getCurrentDate\", \"arguments\": []} Do not include any explanation. Only return one command object. Valid Examples: User: What is the current time? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What time is it? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What is the current date? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: What date is it? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: Hello, how are you? Assistant: {\"command\": \"chat\", \"arguments\": [\"Hello, how are you?\"]}, User: Can you give me a recpie for a cake? Assistant: {\"command\": \"chat\", \"arguments\": [\"Can you give me a recpie for a cake?\"]}.",
+            "init_message": "Always respond with a single valid JSON command from the following list: {\"command\": \"testSubscribe\", \"arguments\": []}, {\"command\": \"testPublish\", \"arguments\": []}, {\"command\": \"chat\", \"arguments\": [\"<user prompt>\"], {\"command\": \"getCurrentDate\", \"arguments\": []} Do not include any explanation. Only return one command object. Valid Examples: User: What is the current time? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What time is it? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What is the current date? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: What date is it? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: Hello, how are you? Assistant: {\"command\": \"chat\", \"arguments\": [\"Hello, how are you?\"]}, User: Can you give me a recpie for a cake? Assistant: {\"command\": \"chat\", \"arguments\": [\"Can you give me a recpie for a cake?\"]}.",
             "keepHistory": false
         },
         {
@@ -42,19 +42,20 @@
         "clean_session": true,
         "commands" : [
             {
-                "name" : "testSub",
+                "name" : "testSubscribe",
                 "type" : "subscribe",
-                "topic" : "azazel/testSub",
+                "topic" : "azazel/testSubscribe",
                 "qos" : 1,
                 "retain" : false,
                 "function" : "",
                 "NArgs" : 0
             },
             {
-                "name" : "testResponse",
+                "name" : "testPublish",
                 "type" : "publish",
-                "topic" : "azazel/testResponse",
+                "topic" : "azazel/testPublish",
                 "qos" : 1,
+                "payload" : "TEST MESSAGE FROM AZAZEL ASSISTANT",
                 "retain" : false,
                 "function" : "",
                 "NArgs" : 0

@@ -19,6 +19,7 @@ void ConfigReader::readConfig(const std::string& filePath, bool verbose) {
     configFile.close();
 };
 
+
 void ConfigReader::parseConfig() {
     if (configJson.is_null()) {
         throw std::runtime_error("Config JSON is null");
@@ -54,22 +55,20 @@ void ConfigReader::parseConfig() {
         else
             model.dist = modelJson["dist"].get<float>();
 
-        models.push_back(model);
+        config.models.push_back(model);
     }
 
     // Parse MQTT configurations
     if (configJson.contains("mqtt") && configJson["mqtt"].is_object()) {
         const auto& mqttJson = configJson["mqtt"];
 
-        ConfigVars::MQTTConfig mqttConfig;
-        mqttConfig.enabled = mqttJson.value("enabled", false);
-        mqttConfig.broker_ip = mqttJson.value("broker_ip", "localhost");
-        mqttConfig.broker_port = mqttJson.value("broker_port", 1883);
-        mqttConfig.username = mqttJson.value("username", "");
-        mqttConfig.password = mqttJson.value("password", "");
-        mqttConfig.client_id = mqttJson.value("client_id", "DefaultClient");
-        mqttConfig.keepalive = mqttJson.value("keepalive", 60);
-        mqttConfig.clean_session = mqttJson.value("clean_session", true);
+        config.mqtt.broker_ip = mqttJson.value("broker_ip", "localhost");
+        config.mqtt.broker_port = mqttJson.value("broker_port", 1883);
+        config.mqtt.username = mqttJson.value("username", "");
+        config.mqtt.password = mqttJson.value("password", "");
+        config.mqtt.client_id = mqttJson.value("client_id", "DefaultClient");
+        config.mqtt.keepalive = mqttJson.value("keepalive", 60);
+        config.mqtt.clean_session = mqttJson.value("clean_session", true);
 
         if (mqttJson.contains("commands") && mqttJson["commands"].is_array()) {
             for (const auto& cmdJson : mqttJson["commands"]) {
@@ -80,29 +79,28 @@ void ConfigReader::parseConfig() {
                 cmd.topic = cmdJson.value("topic", "");
                 cmd.qos = cmdJson.value("qos", 0);
                 cmd.retain = cmdJson.value("retain", false);
-                cmd.func = cmdJson.value("function", "");
+                cmd.payload = cmdJson.value("payload", "");
 
-                mqttConfig.commands.push_back(cmd);
+                config.mqtt.commands.push_back(cmd);
                 
             }
         } else {
             throw std::runtime_error("MQTT config does not contain 'commands' array");
         }
-        mqtt.push_back(mqttConfig);
+
     } else {
         throw std::runtime_error("Config JSON does not contain 'mqtt' object");
     }
 }
 
-const std::vector<ConfigVars::MQTTConfig> ConfigReader::getMQTT() const {
-    return mqtt;
+
+const ConfigVars::config ConfigReader::getConfig() const {
+    return config;
 }
-const std::vector<ConfigVars::MQTTCommand> ConfigReader::getMQTTCommand() const {
-    return mqttCommands;
-}
+
 const std::vector<ConfigVars::Model> ConfigReader::getModels() const {
-    return models;
+    return config.models;
 }
-const std::string ConfigReader::getConfigData() const {
-    return configData;
+const ConfigVars::MQTTConfig ConfigReader::getMQTTConfig() const {
+    return config.mqtt;
 }

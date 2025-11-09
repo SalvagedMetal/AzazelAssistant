@@ -3,7 +3,6 @@
 #include <cstring>
 
 #include "../src/functionCall.h"
-#include "../src/configReader.h"
 
 void testIsValidCommand() {
     std::string validCommand = R"({"command": "chat", "arguments": ["Hello, how are you?"]})";
@@ -14,12 +13,14 @@ void testIsValidCommand() {
 }
 
 void testCallFunction(std::string modelPath) {
+    MQTTClient dummyMqtt;
+    ConfigVars::config dummyConfig;
     Model model("TestModel", "Testing", "../" + modelPath, 0, 2048, 
                 "This is a test model, you can only respond what is explicitly given to you.", 0.5f, 0.1f, 0.9f, 0.9f, 0.9f, 10, true, true);
     model.init();
 
     std::string command = R"({"command": "chat", "arguments": ["Respond to this prompt with: This is a test response"]})";
-    std::string response = FunctionCall::call(command, model, true);
+    std::string response = FunctionCall::call(command, model, true, dummyMqtt, dummyConfig);
     
     assert(!response.empty()); // Ensure the response is not empty
     assert(response == "This is a test response"); // Check if the response matches the expected output
