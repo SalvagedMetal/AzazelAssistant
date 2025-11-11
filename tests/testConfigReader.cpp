@@ -31,12 +31,23 @@ void testModelFields() {
     }
 }
 
+void testMQTTConfig() {
+    ConfigReader configReader;
+    configReader.readConfig("../config.json", true);
+    configReader.parseConfig();
+    const auto mqttConfig = configReader.getMQTTConfig();
+    assert(!mqttConfig.broker_ip.empty());
+    assert(mqttConfig.broker_port > 0);
+    assert(!mqttConfig.client_id.empty());
+}
+
 int main() {
     try {
         std::cout << "Running ConfigReader tests..." << std::endl;
         testReadConfig();
         testParseConfig();
         testModelFields();
+        testMQTTConfig();
     } catch (const std::exception& e) {
         std::cerr << "ConfigReader Test failed: " << e.what() << std::endl;
         return 1;

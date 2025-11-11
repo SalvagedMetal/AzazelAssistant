@@ -37,7 +37,7 @@ target_link_libraries(Azazel PRIVATE mosquitto)
 set_target_properties(Azazel PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # Enable testing
-set(TEST_EXECUTABLES testConfigReader testDateTime testModel testFunctionCall)
+set(TEST_EXECUTABLES testConfigReader testDateTime testModel testFunctionCall testMqtt)
 
 # Add tests
 foreach(test_exec ${TEST_EXECUTABLES})
