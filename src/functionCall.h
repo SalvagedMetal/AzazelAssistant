@@ -6,8 +6,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <typeinfo>
-#include <future>
-#include <memory>
 
 #include "nlohmann/json.hpp"
 

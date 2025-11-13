@@ -3,9 +3,6 @@
 #include "src/functionCall.h"
 #include "src/mqtt.h"
 
-#include <thread>
-#include <chrono>
-
 int main(int argc, char *argv[]) {
 
     std::string response;
@@ -112,7 +109,6 @@ int main(int argc, char *argv[]) {
     std::cout << "Azazel Assistant is running...\n";
 
     // Main loop to process user input
-    
     while (true) {
         std::cout << "> ";
         getline(std::cin, userInput);
@@ -142,7 +138,5 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    
-
     return 0;
 }

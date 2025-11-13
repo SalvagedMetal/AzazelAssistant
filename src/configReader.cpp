@@ -81,13 +81,11 @@ void ConfigReader::parseConfig() {
                 cmd.retain = cmdJson.value("retain", false);
                 cmd.payload = cmdJson.value("payload", "");
 
-                config.mqtt.commands.push_back(cmd);
-                
+                config.mqtt.commands.push_back(cmd);           
             }
         } else {
             throw std::runtime_error("MQTT config does not contain 'commands' array");
         }
-
     } else {
         throw std::runtime_error("Config JSON does not contain 'mqtt' object");
     }
