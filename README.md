@@ -1,5 +1,5 @@
 # AzazelAssistant
-## v0.3 Configuration and Modularised Testing
+## v0.3 MQTT Communication
 AzazelAssistant is a local, privacy-respecting AI assistant built on top of [llama.cpp](https://github.com/ggml-org/llama.cpp) for efficient LLM inference and [nlohmann/json](https://github.com/nlohmann/json) for lightweight JSON handling. It provides a simple, fast, and extensible interface for interacting with large language models (LLMs) on your own machine—no cloud required. Can send commands to other devices through MQTT protocol.
 
 ---
