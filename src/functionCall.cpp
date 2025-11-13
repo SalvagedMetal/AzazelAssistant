@@ -1,9 +1,10 @@
 #include "functionCall.h"
+#include "mqttQueue.h"
 
 using json = nlohmann::json;
 using namespace nlohmann::literals;
 
-std::string FunctionCall::call(const std::string command, Model& model, const bool isVerbose) {
+std::string FunctionCall::call(const std::string command, Model& model, const bool isVerbose, MQTTClient& mqtt, ConfigVars::config& config) {
     json parsedCommand;
     try {
         parsedCommand = json::parse(command);
@@ -34,11 +35,41 @@ std::string FunctionCall::call(const std::string command, Model& model, const bo
         return DateTime::getCurrentDateTime(DTFormat::HHMMSS24);
     } else if (function == "GetCurrentDate") {
         return DateTime::getCurrentDateTime(DTFormat::DDMMYYYY);
+    } else if (function == "testPublish") {
+        if (isVerbose) {
+            std::cout << "Starting MQTT Publish task..." << std::endl;
+        }
+        for (const auto& cmd : config.mqtt.commands) {
+            if (cmd.name == "testPublish") {
+                try {
+                    mqtt.Publish(nullptr, cmd.payload,
+                        cmd.payload.length(), cmd.topic, cmd.qos, cmd.retain);
+                    return "Publish successful";
+                } catch (const std::exception &e) {
+                    return std::string("Publish error: ") + e.what();
+                }
+            }
+        }
+    } else if (function == "testSubscribe") {
+        if (isVerbose) {
+            std::cout << "Starting MQTT Subscribe task..." << std::endl;
+        }
+        for (const auto& cmd : config.mqtt.commands) {
+            if (cmd.name == "testSubscribe") {
+                try {
+                    std::string result = mqtt.Subscribe(cmd.topic, cmd.qos);
+                    return result;
+                } catch (const std::exception &e) {
+                    return std::string("Subscribe error: ") + e.what();
+                }
+            }
+        }
     } else {
         throw std::invalid_argument("Unknown command: " + function);
     }
     return "";
 }
+
 
 bool FunctionCall::isValidCommand(const std::string command, const bool isVerbose) {
     json parsedCommand = json::parse(command);
@@ -63,6 +94,10 @@ bool FunctionCall::isValidCommand(const std::string command, const bool isVerbos
             } else {
                 throw std::invalid_argument("Missing or invalid 'arguments' field in command: " + cmd.function);
                 return false;
+            }
+        } else {
+            if (isVerbose) {
+                std::cout << "Command not found: " << parsedCommand["command"] << std::endl;
             }
         }
     }

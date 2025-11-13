@@ -19,7 +19,7 @@ set(LLAMA_BUILD_COMMON OFF CACHE INTERNAL "")
 #set(LLAMA_LLGUIDANCE ON CACHE BOOL "Enable LLGuidance for structured output")
 
 # Source files list
-set(SOURCE_DIR src/dateTime.cpp src/dateTime.h src/model.cpp src/model.h src/functionCall.cpp src/functionCall.h src/configReader.cpp src/configReader.h src/configVars.h)
+set(SOURCE_DIR src/dateTime.cpp src/dateTime.h src/model.cpp src/model.h src/functionCall.cpp src/functionCall.h src/configReader.cpp src/configReader.h src/configVars.h src/mqtt.cpp src/mqtt.h)
 
 set(TEST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin/tests)
 
@@ -27,15 +27,17 @@ add_subdirectory(lib/llama.cpp)
 add_subdirectory(lib/json)
 
 add_executable(Azazel main.cpp ${SOURCE_DIR})
+
 # Include external libraries
 target_link_libraries(Azazel PRIVATE llama)
 target_link_libraries(Azazel PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(Azazel PRIVATE mosquitto)
 
 # Main executable stays in the project root
 set_target_properties(Azazel PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # Enable testing
-set(TEST_EXECUTABLES testConfigReader testDateTime testModel testFunctionCall)
+set(TEST_EXECUTABLES testConfigReader testDateTime testModel testFunctionCall testMqtt)
 
 # Add tests
 foreach(test_exec ${TEST_EXECUTABLES})
@@ -43,6 +45,7 @@ foreach(test_exec ${TEST_EXECUTABLES})
     add_executable(${test_exec} ${TEST_SOURCES_${test_exec}})
     target_link_libraries(${test_exec} PRIVATE llama)
     target_link_libraries(${test_exec} PRIVATE nlohmann_json::nlohmann_json)
+    target_link_libraries(${test_exec} PRIVATE mosquitto)
     set_target_properties(${test_exec} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIR})
     add_test(NAME ${test_exec} COMMAND ${test_exec})
 endforeach()

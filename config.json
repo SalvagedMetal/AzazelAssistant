@@ -1,5 +1,5 @@
 {
-    "models": [ 
+    "models": [
         {
             "name": "Phi-4-mini-instruct-Q6_K_L",
             "path": "models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf",
@@ -12,7 +12,7 @@
             "typical": 0.95,
             "top_k": 10,
             "dist": "default",
-            "init_message": "Always respond with a single valid JSON command from the following list: {\"command\": \"chat\", \"arguments\": [\"<user prompt>\"], {\"command\": \"getCurrentDate\", \"arguments\": []} Do not include any explanation. Only return one command object. Valid Examples: User: What is the current time? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What time is it? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What is the current date? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: What date is it? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: Hello, how are you? Assistant: {\"command\": \"chat\", \"arguments\": [\"Hello, how are you?\"]}, User: Can you give me a recpie for a cake? Assistant: {\"command\": \"chat\", \"arguments\": [\"Can you give me a recpie for a cake?\"]}.",
+            "init_message": "Always respond with a single valid JSON command from the following list: {\"command\": \"testSubscribe\", \"arguments\": []}, {\"command\": \"testPublish\", \"arguments\": []}, {\"command\": \"chat\", \"arguments\": [\"<user prompt>\"], {\"command\": \"getCurrentDate\", \"arguments\": []} Do not include any explanation. Only return one command object. Valid Examples: User: What is the current time? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What time is it? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What is the current date? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: What date is it? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: Hello, how are you? Assistant: {\"command\": \"chat\", \"arguments\": [\"Hello, how are you?\"]}, User: Can you give me a recpie for a cake? Assistant: {\"command\": \"chat\", \"arguments\": [\"Can you give me a recpie for a cake?\"]}.",
             "keepHistory": false
         },
         {
@@ -30,5 +30,36 @@
             "init_message": "You are Azazel, a helpful assistant. Respond in a friendly manner and provide useful information.",
             "keepHistory": true       
         }   
-    ]
+    ],
+    "mqtt": {
+        "enabled": true,
+        "broker_ip": "localhost",
+        "broker_port": 1883,
+        "username": "",
+        "password": "",
+        "client_id": "AzazelClient",
+        "keepalive": 60,
+        "clean_session": true,
+        "commands" : [
+            {
+                "name" : "testSubscribe",
+                "type" : "subscribe",
+                "topic" : "azazel/testSubscribe",
+                "qos" : 1,
+                "retain" : false,
+                "function" : "",
+                "NArgs" : 0
+            },
+            {
+                "name" : "testPublish",
+                "type" : "publish",
+                "topic" : "azazel/testPublish",
+                "qos" : 1,
+                "payload" : "TEST MESSAGE FROM AZAZEL ASSISTANT",
+                "retain" : false,
+                "function" : "",
+                "NArgs" : 0
+            }
+        ]
+    }
 }

@@ -11,6 +11,8 @@
 
 #include "model.h"
 #include "dateTime.h"
+#include "mqtt.h"
+#include "configReader.h"
 
 namespace FCFormat {
     struct ModelCommand {
@@ -18,19 +20,30 @@ namespace FCFormat {
         int NArgs;
         std::vector<std::string> args;
     };
+
+    struct MQTTTask {
+        std::string type; // "publish" or "subscribe"
+        std::string topic;
+        std::string message;
+        int qos;
+        bool retain;
+    };
 }
 
 namespace FunctionCall {
+
     // List of valid commands
     const std::vector<FCFormat::ModelCommand> commands = {
         {"GetCurrentTime", 0, {"format"}},
         {"GetCurrentDate", 0, {"format"}},
-        {"chat", 1, {"userPrompt"}}
+        {"chat", 1, {"userPrompt"}},
+        {"testPublish", 0},
+        {"testSubscribe", 0}
     };
 
     // list of commands
-    std::string call(const std::string, Model&, const bool);
-    bool isValidCommand(const std::string, const bool);
+    std::string call(const std::string command, Model& model, const bool isVerbose, MQTTClient& mqtt, ConfigVars::config& config);
+    bool isValidCommand(const std::string command, const bool isVerbose);
 }
 
 #endif
