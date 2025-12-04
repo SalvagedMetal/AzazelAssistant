@@ -10,7 +10,6 @@
 #include <queue>
 #include <functional>
 #include <atomic>
-#include <thread>
 
 extern std::atomic<bool> mqttRunning;
 
@@ -70,5 +69,8 @@ public:
     T pop();
     void mqttWorker(MQTTClient& client);
 };
+
+extern MQTTQueue<std::function<std::string()>> mqttTaskQueue;
+
 
 #endif

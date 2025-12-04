@@ -40,10 +40,21 @@ namespace ConfigVars {
         std::vector<MQTTCommand> commands;
     };
 
+    struct Commands {
+        std::string name;
+        std::string function;
+        int NArgs;
+        bool confirmation;
+        int priority;
+        std::vector<std::string> phrases;
+    };
+    
     // Overall configuration structure
     struct config {
+        bool ModelEnable;
         std::vector<Model> models;
         MQTTConfig mqtt;
+        std::vector<Commands> commandCalls;
     };
 };
 

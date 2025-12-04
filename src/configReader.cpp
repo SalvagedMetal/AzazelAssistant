@@ -31,7 +31,11 @@ void ConfigReader::parseConfig() {
         throw std::runtime_error("Config JSON does not contain 'models' array");
         return;
     }
-
+    if (configJson.contains("ModelEnable")) {
+        config.ModelEnable = configJson.value("ModelEnable", false);
+    } else {
+        config.ModelEnable = false; // Default to false if not specified
+    }
     for (const auto& modelJson : configJson["models"]) {
         if (!modelJson.is_object()) {
             throw std::runtime_error("Model entry is not an object");
@@ -89,6 +93,31 @@ void ConfigReader::parseConfig() {
     } else {
         throw std::runtime_error("Config JSON does not contain 'mqtt' object");
     }
+
+    // Command Calling
+    if (configJson.contains("commandCalls") && configJson["commandCalls"].is_array()) {
+        for (const auto& cmdCallJson : configJson["commandCalls"]) {
+            ConfigVars::Commands cmdCall;
+
+            cmdCall.name = cmdCallJson.value("name", "");
+            cmdCall.function = cmdCallJson.value("function", "");
+            cmdCall.NArgs = cmdCallJson.value("NArgs", 0);
+            cmdCall.confirmation = cmdCallJson.value("confirmation", false);
+            cmdCall.priority = cmdCallJson.value("priority", 0);
+
+            if (cmdCallJson.contains("phrases") && cmdCallJson["phrases"].is_array()) {
+                for (const auto& phrase : cmdCallJson["phrases"]) {
+                    cmdCall.phrases.push_back(phrase.get<std::string>());
+                }
+            } else {
+                throw std::runtime_error("Command call does not contain 'phrases' array");
+            }
+
+            config.commandCalls.push_back(cmdCall);
+        }
+    } else {
+        throw std::runtime_error("Config JSON does not contain 'commandCalls' array");
+    }
 }
 
 
@@ -101,4 +130,7 @@ const std::vector<ConfigVars::Model> ConfigReader::getModels() const {
 }
 const ConfigVars::MQTTConfig ConfigReader::getMQTTConfig() const {
     return config.mqtt;
+}
+const std::vector<ConfigVars::Commands> ConfigReader::getCommandCalls() const {
+    return config.commandCalls;
 }

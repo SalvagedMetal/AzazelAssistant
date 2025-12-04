@@ -1,5 +1,4 @@
 #include "mqtt.h"
-#include "mqttQueue.h"
 
 std::mutex MQTTClient::mtx;
 std::condition_variable MQTTClient::cv;

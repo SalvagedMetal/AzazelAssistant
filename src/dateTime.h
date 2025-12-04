@@ -25,11 +25,12 @@ namespace DTFormat {
     inline const char* DayDMonthYYYY = "%A.%e.%B.%Y";
     inline const char* YYYYMMDD = "%Y-%m-%d";
     inline const char* YYYYMMDDHHMMSS = "%Y-%m-%d %H:%M:%S";
+    inline const char* Day = "%A";
 }
 
 namespace DateTime {
-    extern const std::array<const char*, 8> timeFormats;
-    extern const std::array<const char*, 8> dateFormats;
+    extern const std::array<const char*, 9> timeFormats;
+    extern const std::array<const char*, 9> dateFormats;
 
     std::string getCurrentDateTime(const char*);
     std::string getDateTime(const time_t, const char*);

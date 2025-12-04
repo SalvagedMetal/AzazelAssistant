@@ -1,13 +1,13 @@
 #include "dateTime.h"
 
-const std::array<const char*, 8> DateTime::timeFormats = {
+const std::array<const char*, 9> DateTime::timeFormats = {
         DTFormat::HHMMSS24,
         DTFormat::HHMM24,
         DTFormat::HHMMSS12,
         DTFormat::HHMM12
     };
 
-const std::array<const char*, 8> DateTime::dateFormats = {
+const std::array<const char*, 9> DateTime::dateFormats = {
         DTFormat::DDMMYY,
         DTFormat::DMonthYY,
         DTFormat::DayDMonthYY,
@@ -15,7 +15,8 @@ const std::array<const char*, 8> DateTime::dateFormats = {
         DTFormat::DMonthYYYY,
         DTFormat::DayDMonthYYYY,
         DTFormat::YYYYMMDD,
-        DTFormat::YYYYMMDDHHMMSS
+        DTFormat::YYYYMMDDHHMMSS,
+        DTFormat::Day
     };
 
 std::string DateTime::getCurrentDateTime(const char* format) {

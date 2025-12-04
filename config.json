@@ -1,4 +1,5 @@
 {
+    "modelEnabled": true,
     "models": [
         {
             "name": "Phi-4-mini-instruct-Q6_K_L",
@@ -6,13 +7,13 @@
             "purpose": "Command",
             "ngl": 0,
             "n_ctx": 2048,
-            "temp": 0.1,
+            "temp": 0.40,
             "min_p": 0.05,
             "top_p": 0.95,
             "typical": 0.95,
-            "top_k": 10,
+            "top_k": 25,
             "dist": "default",
-            "init_message": "Always respond with a single valid JSON command from the following list: {\"command\": \"testSubscribe\", \"arguments\": []}, {\"command\": \"testPublish\", \"arguments\": []}, {\"command\": \"chat\", \"arguments\": [\"<user prompt>\"], {\"command\": \"getCurrentDate\", \"arguments\": []} Do not include any explanation. Only return one command object. Valid Examples: User: What is the current time? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What time is it? Assistant: {\"command\": \"GetCurrentTime\", \"arguments\": []}, User: What is the current date? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: What date is it? Assistant: {\"command\": \"GetCurrentDate\", \"arguments\": []}, User: Hello, how are you? Assistant: {\"command\": \"chat\", \"arguments\": [\"Hello, how are you?\"]}, User: Can you give me a recpie for a cake? Assistant: {\"command\": \"chat\", \"arguments\": [\"Can you give me a recpie for a cake?\"]}.",
+            "init_message": "You can only respond with the phrase that closest matches the user's command. Do not add any extra information or explanation. If you do not understand the command, respond with 'Command not recognized.' Here are the phrases, <argN> and <argN-> represent arguments that will be filled in based on user input:",
             "keepHistory": false
         },
         {
@@ -44,7 +45,7 @@
             {
                 "name" : "testSubscribe",
                 "type" : "subscribe",
-                "topic" : "azazel/testSubscribe",
+                "topic" : "azazel/test",
                 "qos" : 1,
                 "retain" : false,
                 "function" : "",
@@ -53,13 +54,77 @@
             {
                 "name" : "testPublish",
                 "type" : "publish",
-                "topic" : "azazel/testPublish",
+                "topic" : "azazel/test",
                 "qos" : 1,
-                "payload" : "TEST MESSAGE FROM AZAZEL ASSISTANT",
-                "retain" : false,
+                "payload" : "hello MQTT",
+                "retain" : true,
                 "function" : "",
                 "NArgs" : 0
             }
         ]
-    }
+    },
+    "commandCalls" : [
+        {
+            "name": "getCurrentDateTime",
+            "function": "getCurrentDateTime",
+            "priority": 1,
+            "confirmation": false,
+            "NArgs": 1,
+            "phrases": [
+                "what is the current <arg0>",
+                "what <arg0> is it",
+                "what is the <arg0>",
+                "what is the <arg0> today",
+                "tell me the <arg0>",
+                "current <arg0>"
+            ]
+        },
+        {
+            "name": "getDateTime",
+            "function": "getDateTime",
+            "priority": 2,
+            "confirmation": false,
+            "NArgs": 3,
+            "phrases": [
+                "what is the <arg0> in <arg1> <arg2>",                                
+                "what is the <arg0> on <arg1->",
+                "tell me the <arg0> in <arg1> <arg2>",
+                "what <arg0> is it in <arg1> <arg2>"
+            ]
+        },
+        {
+            "name": "testSubscribe",
+            "function": "testSubscribe",
+            "priority": 3,
+            "confirmation": false,
+            "NArgs": 0,
+            "phrases": [
+                "run test subscribe",
+                "execute test subscribe"
+            ]
+        },
+        {
+            "name": "testPublish",
+            "function": "testPublish",
+            "priority": 4,
+            "confirmation": false,
+            "NArgs": 0,
+            "phrases": [
+                "run test publish",
+                "execute test publish"
+            ]
+        },
+        {
+            "name": "chat",
+            "function": "chat",
+            "priority": -1,
+            "confirmation": false,
+            "NArgs": 1,
+            "phrases": [
+                "question <arg0->",
+                "tell me <arg0->"
+            ]
+        }
+
+    ]
 }
