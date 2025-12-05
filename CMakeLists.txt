@@ -19,7 +19,7 @@ set(LLAMA_BUILD_COMMON OFF CACHE INTERNAL "")
 #set(LLAMA_LLGUIDANCE ON CACHE BOOL "Enable LLGuidance for structured output")
 
 # Source files list
-set(SOURCE_DIR src/dateTime.cpp src/dateTime.h src/model.cpp src/model.h src/functionCall.cpp src/functionCall.h src/configReader.cpp src/configReader.h src/configVars.h src/mqtt.cpp src/mqtt.h)
+set(SOURCE_DIR src/dateTime.cpp src/dateTime.h src/model.cpp src/model.h src/functionCall.cpp src/commandList.cpp src/functionCall.h src/configReader.cpp src/configReader.h src/configVars.h src/mqtt.cpp src/mqtt.h)
 
 set(TEST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin/tests)
 
@@ -37,7 +37,7 @@ target_link_libraries(Azazel PRIVATE mosquitto)
 set_target_properties(Azazel PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # Enable testing
-set(TEST_EXECUTABLES testConfigReader testDateTime testModel testFunctionCall testMqtt)
+set(TEST_EXECUTABLES testConfigReader testDateTime testModel testMqtt testFunctionCall)
 
 # Add tests
 foreach(test_exec ${TEST_EXECUTABLES})

@@ -28,4 +28,6 @@ public:
     const ConfigVars::config getConfig() const;
     const std::vector<ConfigVars::Model> getModels() const;
     const ConfigVars::MQTTConfig getMQTTConfig() const;
+    const std::vector<ConfigVars::Commands> getCommandCalls() const;
+
 };
