@@ -27,37 +27,34 @@ void ConfigReader::parseConfig() {
     }
 
     // Parse models
-    if (!configJson.contains("models") || !configJson["models"].is_array()) {
+    if (!configJson.contains("models") || !configJson["models"].is_array())
         throw std::runtime_error("Config JSON does not contain 'models' array");
-        return;
-    }
     if (configJson.contains("ModelEnable")) {
         config.ModelEnable = configJson.value("ModelEnable", false);
     } else {
         config.ModelEnable = false; // Default to false if not specified
     }
     for (const auto& modelJson : configJson["models"]) {
-        if (!modelJson.is_object()) {
+        if (!modelJson.is_object())
             throw std::runtime_error("Model entry is not an object");
-        }
-        // Update to safe access with value() and default values later
+
         ConfigVars::Model model;
-        model.name = modelJson["name"].get<std::string>();
-        model.purpose = modelJson["purpose"].get<std::string>();
-        model.path = modelJson["path"].get<std::string>();
-        model.ngl = modelJson["ngl"].get<int>();
-        model.n_ctx = modelJson["n_ctx"].get<int>();
-        model.temp = modelJson["temp"].get<float>();
-        model.min_p = modelJson["min_p"].get<float>();
-        model.top_p = modelJson["top_p"].get<float>();
-        model.typical = modelJson["typical"].get<float>();
-        model.top_k = modelJson["top_k"].get<int>();
-        model.init_message = modelJson["init_message"].get<std::string>();
-        model.keepHistory = modelJson["keepHistory"].get<bool>();
+        model.name = modelJson.value("name", "");
+        model.purpose = modelJson.value("purpose", "");
+        model.path = modelJson.value("path", "");
+        model.ngl = modelJson.value("ngl", 0);
+        model.n_ctx = modelJson.value("n_ctx", 512);
+        model.temp = modelJson.value("temp", 0.7f);
+        model.min_p = modelJson.value("min_p", 0.0f);
+        model.top_p = modelJson.value("top_p", 1.0f);
+        model.typical = modelJson.value("typical", 1.0f);
+        model.top_k = modelJson.value("top_k", 40);
+        model.init_message = modelJson.value("init_message", "You are a helpful assistant.");
+        model.keepHistory = modelJson.value("keepHistory", false);
         if (modelJson["dist"].is_string() && modelJson["dist"] == "default")
             model.dist = LLAMA_DEFAULT_SEED; // Set default distribution if specified
         else
-            model.dist = modelJson["dist"].get<float>();
+            model.dist = modelJson.value("dist", LLAMA_DEFAULT_SEED);
 
         config.models.push_back(model);
     }

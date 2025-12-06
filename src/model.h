@@ -25,7 +25,8 @@
     const float dist                || Distribution parameter for sampling, 0.0 for no distribution, LLAMA_DEFAULT_SEED for default distribution
     const int top_k                 || Top-k sampling parameter, choose only the most probable k tokens
     const bool keepHistory          || Whether to keep the chat history
-    const bool isVerbose            || Return verbose strings */
+    const bool isVerbose            || Return verbose strings
+*/
 class Model {
     private:
     struct chat_messages {
@@ -81,13 +82,30 @@ class Model {
 
     Model() = default;
     ~Model() = default;
-    Model(const std::string&, const std::string&, const std::string&, const int, const int, 
-          const std::string&, const float, const float, const float, const float, 
-          const float, const int, const bool, const bool);
+    Model(const std::string &name, const std::string &purpose, const std::string &path, 
+            const int ngl, const int n_ctx, const std::string &init_msg, 
+            const float temp, const float min_p, const float top_p, 
+            const float typical, const float dist, const int top_k, const bool keep_history, const bool isVerbose);
     
+    /*
+        Initializes the model by loading it from the specified path and setting up the context and sampler.
+    */
     void init();
-    std::string generate(const std::string&);
-    std::string respond(const std::string&);
+    /*
+        Generates a response based on the given prompt.
+        std::string &prompt   || Input prompt string
+        returns               || Generated response string
+    */
+    std::string generate(const std::string &prompt);
+    /*
+        Responds to the given prompt, managing chat history if enabled.
+        std::string &prompt   || Input prompt string
+        returns               || Generated response string
+    */
+    std::string respond(const std::string &prompt);
+    /*
+        Clears the chat history, retaining only the initial system message.
+    */
     void clearHistory();
 
     // Getters
@@ -108,20 +126,20 @@ class Model {
     std::vector<chat_messages> getMessages() const;
 
     // Setters
-    void setModelName(const std::string&);
-    void setModelPurpose(const std::string&);
-    void setModelPath(const std::string&);
-    void setNGL(const int);
-    void setNCTX(const int);
-    void setInitMessage(const std::string&);
-    void setTemp(const float);
-    void setMinP(const float);
-    void setDist(const float);
-    void setTopP(const float);
-    void setTypical(const float);
-    void setTopK(const int);
-    void setKeepHistory(const bool);
-    void setVerbose(const bool);
+    void setModelName(const std::string &model_name);
+    void setModelPurpose(const std::string &model_purpose);
+    void setModelPath(const std::string &model_path);
+    void setNGL(const int ngl);
+    void setNCTX(const int n_ctx);
+    void setInitMessage(const std::string &init_message);
+    void setTemp(const float temp);
+    void setMinP(const float min_p);
+    void setDist(const float dist);
+    void setTopP(const float top_p);
+    void setTypical(const float typical);
+    void setTopK(const int top_k);
+    void setKeepHistory(const bool keepHistory);
+    void setVerbose(const bool isVerbose);
     void setMessages(const std::vector<chat_messages>& messages);
 };
 

@@ -223,3 +223,4 @@
     int Model::getKeepHistory() const { return keepHistory; }
     int Model::getVerbose() const { return isVerbose; }
     std::vector<Model::chat_messages> Model::getMessages() const { return messages; }
+    

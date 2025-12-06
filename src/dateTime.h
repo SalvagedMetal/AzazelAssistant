@@ -32,11 +32,37 @@ namespace DateTime {
     extern const std::array<const char*, 9> timeFormats;
     extern const std::array<const char*, 9> dateFormats;
 
-    std::string getCurrentDateTime(const char*);
-    std::string getDateTime(const time_t, const char*);
+    /*  
+        Gets the current date/time formatted as per the given format.
+        const char* format   || Format string
+        Returns              || Formatted date/time string.
+    */
+    std::string getCurrentDateTime(const char* format);
+    /*  
+        Formats the given timestamp as per the given format.
+        const time_t timeStamp  || Timestamp to format
+        const char* format      || Format string
+        Returns                 || Formatted date/time string.
+    */
+    std::string getDateTime(const time_t timeStamp, const char* format);
+    /*  
+        Gets the current timestamp.
+        Returns || Current timestamp.
+    */
     time_t getCurrentTimestamp();
-    time_t getTimestamp(const char*, const char*);
-    std::string findFormat(const std::string&);
+    /*  
+        Parses the given date/time string as per the given format and returns the timestamp.
+        const char* dateTime   || Date/time string to parse
+        const char* format     || Format string
+        Returns                || Parsed timestamp.
+    */
+    time_t getTimestamp(const char* dateTime, const char* format);
+    /*  
+        Finds the matching format for the given date/time input string.
+        const std::string& input   || Date/time input string
+        Returns                    || Matching format string.
+    */
+    std::string findFormat(const std::string& input);
 };
 
 #endif
