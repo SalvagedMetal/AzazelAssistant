@@ -1,3 +1,6 @@
+#ifndef CONFIG_READER_H
+#define CONFIG_READER_H
+
 #include <iostream>
 #include <cassert>
 #include <string>
@@ -22,7 +25,16 @@ private:
     ConfigVars::config config;
 
 public:
+    /*  
+        Reads and parses the configuration file at the given file path.
+        std::string& filePath   || Path to the configuration file
+        bool isVerbose          || Whether to print verbose output during reading and parsing
+    */
     void readConfig(const std::string& filePath, const bool isVerbose);
+    /*  
+        Parses the configuration data read from the file.
+        Populates the internal configuration structures.
+    */
     void parseConfig();
 
     const ConfigVars::config getConfig() const;
@@ -31,3 +43,5 @@ public:
     const std::vector<ConfigVars::Commands> getCommandCalls() const;
 
 };
+
+#endif

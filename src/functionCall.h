@@ -57,7 +57,7 @@ namespace FunctionCall {
     // list of commands
     /* FunctionCall::Call to call a function by its ParsedPhrase
         std::unique_ptr<FunctionCall::ParsedPhrase>& ParsedCommand      || Parsed command to execute
-        Model& model                                                    || Model instance for model-related commands
+        Model& model                                                    || Modegl instance for model-related commands
         MQTTClient& mqtt                                                || MQTT client instance for MQTT-related commands
         ConfigVars::config& config                                      || Configuration variables
         const bool isVerbose                                            || Whether to print verbose output
