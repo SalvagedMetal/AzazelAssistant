@@ -2,6 +2,7 @@
 #include "src/functionCall.h"
 #include "src/mqtt.h"
 #include "src/configReader.h"
+#include "src/voice.h"
 
 int main(int argc, char *argv[]) {
 
@@ -11,6 +12,7 @@ int main(int argc, char *argv[]) {
     std::string commandInitMessage;
     bool isVerbose = false;
     bool retry = false;
+    bool ttsEnabled = true;
 
     ConfigVars::config config;
     ConfigVars::MQTTConfig mqttConfig;
@@ -19,18 +21,24 @@ int main(int argc, char *argv[]) {
     Model chatModel;
     std::unique_ptr<FunctionCall::ParsedPhrase> parsedPhrasePtr = nullptr;
     ConfigReader configReader;
+    Voice voiceSynth;
 
-    //Processing command line arguments
+
+    // Processing command line arguments
     for (int i = 0; i < argc; ++i) {
         if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
             std::cout << "Usage: AzazelAssistant [options]\n"
                       << "Options:\n"
-                      << "  --help, -h       Show this help message\n"
-                      << "  --versbose, -v    Enable verbose output\n";
+                      << " --help, -h       Show this help message\n"
+                      << " --versbose, -v   Enable verbose output\n"
+                      << " --silent, -s     Run in silent mode (no TTS output)\n";
             return 0;
         } else if (std::string(argv[i]) == "--verbose" || std::string(argv[i]) == "-v") {
             std::cout << "Verbose mode enabled\n";
             isVerbose = true;
+        } else if (std::string(argv[i]) == "--silent" || std::string(argv[i]) == "-s") {
+            std::cout << "Silent mode enabled (no TTS output)\n";
+            ttsEnabled = false;
         }
     }
     // Load configuration
@@ -130,6 +138,28 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // Initialize TTS voice synthesizer
+    if (ttsEnabled && config.voice.enabled) {
+        std::cout << "Initializing voice synthesizer..." << std::endl;
+        try {
+            // setting voice config
+            voiceSynth.setModelPath(config.voice.model_path);
+            voiceSynth.setConfigPath(config.voice.config_path);
+            voiceSynth.setEspeakDataPath(config.voice.espeak_data_path);
+            voiceSynth.setFrequency(config.voice.sample_rate);
+            voiceSynth.setFileName(config.voice.output_file);
+            voiceSynth.setLengthScale(config.voice.length_scale);
+            voiceSynth.setNoiseScale(config.voice.noise_scale);
+            voiceSynth.setNoiseWScale(config.voice.noise_w_scale);
+            voiceSynth.setVerbose(isVerbose);
+            voiceSynth.setEnabled(config.voice.enabled);
+            voiceSynth.init();
+        } catch (const std::exception &e) {
+            std::cerr << "Error initializing voice synthesizer: " << e.what() << std::endl;
+            return 1;
+        }
+    }
+
     // Initialize function calls
     try {
         if (isVerbose) std::cout << "Initializing function calls..." << std::endl;
@@ -164,12 +194,27 @@ int main(int argc, char *argv[]) {
                     std::cout << "Argument: " << arg << std::endl;
                 }
             }
-            std::cout << FunctionCall::call(parsedPhrasePtr, chatModel, client, config, isVerbose) << std::endl;
+            response = FunctionCall::call(parsedPhrasePtr, chatModel, client, config, isVerbose);
+            std::cout << response << std::endl;
+            if (ttsEnabled && config.voice.enabled) {
+                try {
+                    voiceSynth.speak(response);
+                } catch (const std::exception &e) {
+                    std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
+                }
+            }
             retry = false;
         } else if (config.ModelEnable && !retry) {
             retry = true;
         } else {
             std::cout << "Could not parse command." << std::endl;
+            if (ttsEnabled && config.voice.enabled) {
+                try {
+                    voiceSynth.speak("Could not parse command.");
+                } catch (const std::exception &e) {
+                    std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
+                }
+            }
             retry = false;
         }
         input = "";

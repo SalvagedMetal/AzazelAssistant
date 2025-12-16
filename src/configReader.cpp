@@ -115,6 +115,24 @@ void ConfigReader::parseConfig() {
     } else {
         throw std::runtime_error("Config JSON does not contain 'commandCalls' array");
     }
+    // TTS Voice
+    if (configJson.contains("voice") && configJson["voice"].is_object()) {
+        const auto& voiceJson = configJson["voice"];
+        
+        config.voice.enabled = voiceJson.value("enabled", false);
+        config.voice.name = voiceJson.value("name", "default");
+        config.voice.model_path = voiceJson.value("model_path", "");
+        config.voice.config_path = voiceJson.value("config_path", "");
+        config.voice.espeak_data_path = voiceJson.value("espeak_path", "");
+        config.voice.sample_rate = voiceJson.value("sample_rate", 22050);
+        config.voice.output_file = voiceJson.value("output_file", "output.raw");
+        config.voice.length_scale = voiceJson.value("length_scale", 1.0f);
+        config.voice.noise_scale = voiceJson.value("noise_scale", 0.667f);
+        config.voice.noise_w_scale = voiceJson.value("noise_w_scale", 0.8f);
+        
+    } else {
+        throw std::runtime_error("Config JSON does not contain 'voice' object");
+    }
 }
 
 
@@ -130,4 +148,8 @@ const ConfigVars::MQTTConfig ConfigReader::getMQTTConfig() const {
 }
 const std::vector<ConfigVars::Commands> ConfigReader::getCommandCalls() const {
     return config.commandCalls;
+}
+
+const ConfigVars::VoiceConfig ConfigReader::getVoiceConfig() const {
+    return config.voice;
 }
