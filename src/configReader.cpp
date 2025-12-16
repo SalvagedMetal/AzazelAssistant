@@ -29,8 +29,8 @@ void ConfigReader::parseConfig() {
     // Parse models
     if (!configJson.contains("models") || !configJson["models"].is_array())
         throw std::runtime_error("Config JSON does not contain 'models' array");
-    if (configJson.contains("ModelEnable")) {
-        config.ModelEnable = configJson.value("ModelEnable", false);
+    if (configJson.contains("modelEnabled")) {
+        config.ModelEnable = configJson.value("modelEnabled", false);
     } else {
         config.ModelEnable = false; // Default to false if not specified
     }

@@ -57,14 +57,15 @@ int main(int argc, char *argv[]) {
     if (mqttConfig.enabled) {
         client.setVerbose(isVerbose);
         if (mqttConfig.enabled) {
-            if (isVerbose) std::cout << "Initializing MQTT client..." << std::endl;
             try {
+                std::cout << "Initializing MQTT client... ";
                 client.Init(mqttConfig.username, mqttConfig.password, mqttConfig.client_id, mqttConfig.clean_session);
                 if (client.isInitialized()) {
                     client.Start(mqttConfig.broker_ip, mqttConfig.broker_port, mqttConfig.keepalive);
                 } else {
                     throw std::runtime_error("MQTT client initialization failed.");
                 }
+                std::cout << "Done." << std::endl;
             } catch (const std::exception &e) {
                 std::cerr << "Error initializing MQTT client: " << e.what() << std::endl;
                 return 1;
@@ -130,8 +131,10 @@ int main(int argc, char *argv[]) {
             }
         }
         try {
+            std::cout << "Initializing models... ";
             commandModel.init();
             chatModel.init();
+            std::cout << "Done." << std::endl;
         } catch (const std::exception &e) {
             std::cerr << "Error initializing command model: " << e.what() << std::endl;
             return 1;
@@ -162,14 +165,15 @@ int main(int argc, char *argv[]) {
 
     // Initialize function calls
     try {
-        if (isVerbose) std::cout << "Initializing function calls..." << std::endl;
+        std::cout << "Initializing function calls... ";
             FunctionCall::initCommands(config, &client, &chatModel, isVerbose);
+        std::cout << "Done." << std::endl;
     } catch (const std::exception &e) {
         std::cerr << "Error initializing function calls: " << e.what() << std::endl;
         return 1;
     }
 
-    std::cout << "Azazel Assistant is running...\n";
+    std::cout << "Azazel Assistant v0.3 is running...\n";
     // Main loop
     while (true) {
         if (!retry || !config.ModelEnable) {
