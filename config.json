@@ -126,5 +126,17 @@
             ]
         }
 
-    ]
+    ],
+    "voice": {
+        "name": "AzazelVoice",
+        "enabled": true,
+        "model_path": "models/en_GB-cori-high.onnx",
+        "config_path": "models/en_GB-cori-high.onnx.json",
+        "espeak_path": "lib/libpiper/espeak_ng-install/share/espeak-ng-data",
+        "sample_rate": 22050,
+        "length_scale": 1.0,
+        "noise_scale": 0.667,
+        "noise_scale_w": 0.8,
+        "output_file": "output.raw"
+    }
 }
