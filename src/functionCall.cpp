@@ -39,7 +39,7 @@ bool FunctionCall::checkTypo(const std::string& string1, const std::string& stri
 }
 
 
-std::string FunctionCall::call(const std::unique_ptr<FunctionCall::ParsedPhrase>& ParsedCommand, Model& model, MQTTClient& mqtt, ConfigVars::config& config, const bool isVerbose) {
+std::string FunctionCall::call(const std::unique_ptr<FunctionCall::ParsedPhrase>& ParsedCommand, ConfigVars::config& config, const bool isVerbose) {
     for (const auto& cmd : commandList) {
         if (ParsedCommand->command == cmd.command) {
             if (ParsedCommand->arguments.size() != static_cast<size_t>(cmd.NArgs)) {

@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     Model chatModel;
     std::unique_ptr<FunctionCall::ParsedPhrase> parsedPhrasePtr = nullptr;
     ConfigReader configReader;
-    Voice voiceSynth;
+    Voice voice;
 
 
     // Processing command line arguments
@@ -143,20 +143,21 @@ int main(int argc, char *argv[]) {
 
     // Initialize TTS voice synthesizer
     if (ttsEnabled && config.voice.enabled) {
-        std::cout << "Initializing voice synthesizer..." << std::endl;
-        try {
             // setting voice config
-            voiceSynth.setModelPath(config.voice.model_path);
-            voiceSynth.setConfigPath(config.voice.config_path);
-            voiceSynth.setEspeakDataPath(config.voice.espeak_data_path);
-            voiceSynth.setFrequency(config.voice.sample_rate);
-            voiceSynth.setFileName(config.voice.output_file);
-            voiceSynth.setLengthScale(config.voice.length_scale);
-            voiceSynth.setNoiseScale(config.voice.noise_scale);
-            voiceSynth.setNoiseWScale(config.voice.noise_w_scale);
-            voiceSynth.setVerbose(isVerbose);
-            voiceSynth.setEnabled(config.voice.enabled);
-            voiceSynth.init();
+            voice.setModelPath(config.voice.model_path);
+            voice.setConfigPath(config.voice.config_path);
+            voice.setEspeakDataPath(config.voice.espeak_data_path);
+            voice.setFrequency(config.voice.sample_rate);
+            voice.setFileName(config.voice.output_file);
+            voice.setLengthScale(config.voice.length_scale);
+            voice.setNoiseScale(config.voice.noise_scale);
+            voice.setNoiseWScale(config.voice.noise_w_scale);
+            voice.setVerbose(isVerbose);
+            voice.setEnabled(config.voice.enabled);
+        try {
+            std::cout << "Initializing voice synthesizer... ";
+            voice.init();
+            std::cout << "Done." << std::endl;
         } catch (const std::exception &e) {
             std::cerr << "Error initializing voice synthesizer: " << e.what() << std::endl;
             return 1;
@@ -166,7 +167,7 @@ int main(int argc, char *argv[]) {
     // Initialize function calls
     try {
         std::cout << "Initializing function calls... ";
-            FunctionCall::initCommands(config, &client, &chatModel, isVerbose);
+            FunctionCall::initCommands(config, &client, &chatModel, &voice, isVerbose);
         std::cout << "Done." << std::endl;
     } catch (const std::exception &e) {
         std::cerr << "Error initializing function calls: " << e.what() << std::endl;
@@ -198,13 +199,15 @@ int main(int argc, char *argv[]) {
                     std::cout << "Argument: " << arg << std::endl;
                 }
             }
-            response = FunctionCall::call(parsedPhrasePtr, chatModel, client, config, isVerbose);
+            response = FunctionCall::call(parsedPhrasePtr, config, isVerbose);
             std::cout << response << std::endl;
             if (ttsEnabled && config.voice.enabled) {
-                try {
-                    voiceSynth.speak(response);
-                } catch (const std::exception &e) {
-                    std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
+                if (!response.empty()) {
+                    try {
+                        voice.speak(response);
+                    } catch (const std::exception &e) {
+                        std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
+                    }
                 }
             }
             retry = false;
@@ -214,7 +217,7 @@ int main(int argc, char *argv[]) {
             std::cout << "Could not parse command." << std::endl;
             if (ttsEnabled && config.voice.enabled) {
                 try {
-                    voiceSynth.speak("Could not parse command.");
+                    voice.speak("Could not parse command.");
                 } catch (const std::exception &e) {
                     std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
                 }

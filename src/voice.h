@@ -13,7 +13,8 @@ private:
     std::string modelPath;
     std::string configPath;
     std::string espeakDataPath;
-    piper_synthesizer *synth;
+    piper_synthesizer *synth = nullptr;
+    
     piper_synthesize_options options;
     std::ofstream audio_stream;
     std::string fileName;

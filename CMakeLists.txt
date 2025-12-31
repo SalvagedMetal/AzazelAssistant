@@ -44,7 +44,7 @@ target_link_libraries(Azazel PRIVATE piper)
 set_target_properties(Azazel PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # Enable testing
-set(TEST_EXECUTABLES testConfigReader testDateTime testModel testMqtt testFunctionCall)
+set(TEST_EXECUTABLES testConfigReader testDateTime testModel testMqtt testFunctionCall testVoiceTTS)
 
 # Add tests
 foreach(test_exec ${TEST_EXECUTABLES})

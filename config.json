@@ -124,6 +124,29 @@
                 "question <arg0->",
                 "tell me <arg0->"
             ]
+        },
+        {
+            "name": "speak",
+            "function": "speak",
+            "priority" : 5,
+            "confirmation": false,
+            "NArgs": 1,
+            "phrases": [
+                "say <arg0->",
+                "speak <arg0->"
+            ]
+        },
+        {
+            "name": "setVolume",
+            "function": "setVolume",
+            "priority": 6,
+            "confirmation": false,
+            "NArgs": 1,
+            "phrases": [
+                "set volume to <arg0>",
+                "change volume to <arg0>"
+
+            ]
         }
 
     ],
