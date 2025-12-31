@@ -1,7 +1,10 @@
 #include "voice.h"
 
 Voice::~Voice() {
-    piper_free(synth);
+    if (synth) {
+        piper_free(synth);
+        synth = nullptr;
+    }
 }
 
 Voice::Voice(const std::string& modelPath, const std::string& configPath, const std::string& espeakDataPath,
@@ -14,13 +17,13 @@ Voice::Voice(const std::string& modelPath, const std::string& configPath, const 
 void Voice::init() {
     if (isVerbose) std::cout << "Initializing voice synthesizer..." << std::endl;
     synth = piper_create(modelPath.c_str(), configPath.c_str(), espeakDataPath.c_str());
+    if (synth == nullptr) {
+        throw std::runtime_error("Failed to create Piper synthesizer.");
+    }
     options = piper_default_synthesize_options(synth);
     options.length_scale = lengthScale; // default 1.0
     options.noise_scale = noiseScale; // default 0.667 for single speaker
     options.noise_w_scale = noiseWScale; // default 0.8 for single speaker
-    if (synth == nullptr) {
-        throw std::runtime_error("Failed to create Piper synthesizer.");
-    }
     if (isVerbose) std::cout << "Voice synthesizer initialized." << std::endl;
 }
 
@@ -51,6 +54,6 @@ void Voice::speak(std::string text) {
     if (audio_data.empty()) {
         throw std::runtime_error("No audio data was generated.");
     }
-    std::string playCommand = "aplay -r " + std::to_string(frequency) + " -c 1 -f FLOAT_LE -t raw " + fileName  + " -s";
+    std::string playCommand = "aplay -r " + std::to_string(frequency) + " -c 1 -f FLOAT_LE -t raw " + fileName + " -q";
     system(playCommand.c_str());
 }
