@@ -41,6 +41,7 @@ public:
     const std::vector<ConfigVars::Model> getModels() const;
     const ConfigVars::MQTTConfig getMQTTConfig() const;
     const std::vector<ConfigVars::Commands> getCommandCalls() const;
+    const ConfigVars::VoiceConfig getVoiceConfig() const;
 
 };
 

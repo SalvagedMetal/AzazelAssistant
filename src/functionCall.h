@@ -7,9 +7,10 @@
 #include <any>
 #include <memory>
 
-// Forward declarations
+// Dummy declarations
 class Model;
 class MQTTClient;
+class Voice;
 namespace ConfigVars {
     struct Model;
     struct MQTTCommand;
@@ -51,19 +52,18 @@ namespace FunctionCall {
         ",",
         ".",
         "!",
-        "?"
+        "?",
+        "%"
     };
 
     // list of commands
     /* FunctionCall::Call to call a function by its ParsedPhrase
         std::unique_ptr<FunctionCall::ParsedPhrase>& ParsedCommand      || Parsed command to execute
-        Model& model                                                    || Modegl instance for model-related commands
-        MQTTClient& mqtt                                                || MQTT client instance for MQTT-related commands
         ConfigVars::config& config                                      || Configuration variables
         const bool isVerbose                                            || Whether to print verbose output
         returns                                                         || Result of the command execution as a string
     */
-    std::string call(const std::unique_ptr<FunctionCall::ParsedPhrase>& ParsedCommand, Model& model, MQTTClient& mqtt, ConfigVars::config& config, const bool isVerbose);
+    std::string call(const std::unique_ptr<FunctionCall::ParsedPhrase>& ParsedCommand, ConfigVars::config& config, const bool isVerbose);
     /* FunctionCall::ParsePhrase to parse a phrase into a ParsedPhrase
         const std::string phrase                                        || Input phrase to parse
         std::unique_ptr<FunctionCall::ParsedPhrase>& outParsed          || Output parsed phrase
@@ -86,7 +86,7 @@ namespace FunctionCall {
         Model* model                                                    || Pointer to Model instance
         const bool isVerbose                                            || Whether to print verbose output
     */
-    void initCommands(const ConfigVars::config& config, MQTTClient* client, Model* model, const bool isVerbose);
+    void initCommands(const ConfigVars::config& config, MQTTClient* client, Model* model, Voice* voice, const bool isVerbose);
 }
 
 #endif

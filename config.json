@@ -124,7 +124,42 @@
                 "question <arg0->",
                 "tell me <arg0->"
             ]
+        },
+        {
+            "name": "speak",
+            "function": "speak",
+            "priority" : 5,
+            "confirmation": false,
+            "NArgs": 1,
+            "phrases": [
+                "say <arg0->",
+                "speak <arg0->"
+            ]
+        },
+        {
+            "name": "setVolume",
+            "function": "setVolume",
+            "priority": 6,
+            "confirmation": false,
+            "NArgs": 1,
+            "phrases": [
+                "set volume to <arg0>",
+                "change volume to <arg0>"
+
+            ]
         }
 
-    ]
+    ],
+    "voice": {
+        "name": "AzazelVoice",
+        "enabled": true,
+        "model_path": "models/en_GB-cori-high.onnx",
+        "config_path": "models/en_GB-cori-high.onnx.json",
+        "espeak_path": "lib/libpiper/espeak_ng-install/share/espeak-ng-data",
+        "sample_rate": 22050,
+        "length_scale": 1.0,
+        "noise_scale": 0.667,
+        "noise_scale_w": 0.8,
+        "output_file": "output.raw"
+    }
 }

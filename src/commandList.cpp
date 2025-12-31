@@ -3,10 +3,11 @@
 #include "dateTime.h"
 #include "mqtt.h"
 #include "configReader.h"
+#include "voice.h"
 
 std::vector <FunctionCall::Command> FunctionCall::commandList;
 
-void FunctionCall::initCommands(const ConfigVars::config& config, MQTTClient* mqttClient, Model* model, const bool isVerbose) {
+void FunctionCall::initCommands(const ConfigVars::config& config, MQTTClient* mqttClient, Model* model, Voice* voice, const bool isVerbose) {
     commandList.clear();
     ConfigVars::MQTTConfig mqttVars = config.mqtt;
 
@@ -169,6 +170,40 @@ void FunctionCall::initCommands(const ConfigVars::config& config, MQTTClient* mq
                     return "Error generating response from model: " + std::string(e.what());
                 }
                 return response;
+            }
+        });
+    }
+
+    if (isVerbose) std::cout << "Pushing speak command" << std::endl;
+    commandList.push_back({
+        "speak", 1, {"String"}, nullptr,
+        [isVerbose](const std::vector<std::string>& args) -> std::string {
+            if (isVerbose) std::cout << "Running speak with text: " << args[0] << std::endl;
+            return args[0];
+        }
+    });
+
+    if (config.voice.enabled) {
+        if (isVerbose) std::cout << "Pushing setVolume command" << std::endl;
+        commandList.push_back({
+            "setVolume", 1, {"Float"}, voice,
+            [voice, isVerbose](const std::vector<std::string>& args) -> std::string {
+                if (isVerbose) std::cout << "Running setVolume with value: " << args[0] << std::endl;
+                try {
+                    float volume = std::stof(args[0]);
+                    if (volume >= 0 && volume <= 100) {
+                        volume = volume / 20.0f; // Scale 0-100 to 0.0-5.0
+                        voice->setVolumeScale(volume);
+                        if (isVerbose) std::cout << "VolumeScale set to " << volume << std::endl;
+                        return "Volume set to " + args[0] + "%";
+                    } else {
+                        return "Volume must be between 0% and 100%";
+                    }
+                    
+                } catch (const std::exception &e) {
+                    std::cerr << "Error setting volume: " << e.what() << std::endl;
+                    return "Error setting volume: " + std::string(e.what());
+                }
             }
         });
     }

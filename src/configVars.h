@@ -48,6 +48,19 @@ namespace ConfigVars {
         int priority;
         std::vector<std::string> phrases;
     };
+
+    struct VoiceConfig {
+        bool enabled;
+        std::string name;
+        std::string model_path;
+        std::string config_path;
+        std::string espeak_data_path;
+        int sample_rate;
+        std::string output_file;
+        float length_scale;
+        float noise_scale;
+        float noise_w_scale;
+    };
     
     // Overall configuration structure
     struct config {
@@ -55,6 +68,7 @@ namespace ConfigVars {
         std::vector<Model> models;
         MQTTConfig mqtt;
         std::vector<Commands> commandCalls;
+        VoiceConfig voice;
     };
 };
 

@@ -2,6 +2,7 @@
 #include "src/functionCall.h"
 #include "src/mqtt.h"
 #include "src/configReader.h"
+#include "src/voice.h"
 
 int main(int argc, char *argv[]) {
 
@@ -11,6 +12,7 @@ int main(int argc, char *argv[]) {
     std::string commandInitMessage;
     bool isVerbose = false;
     bool retry = false;
+    bool ttsEnabled = true;
 
     ConfigVars::config config;
     ConfigVars::MQTTConfig mqttConfig;
@@ -19,18 +21,24 @@ int main(int argc, char *argv[]) {
     Model chatModel;
     std::unique_ptr<FunctionCall::ParsedPhrase> parsedPhrasePtr = nullptr;
     ConfigReader configReader;
+    Voice voice;
 
-    //Processing command line arguments
+
+    // Processing command line arguments
     for (int i = 0; i < argc; ++i) {
         if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
             std::cout << "Usage: AzazelAssistant [options]\n"
                       << "Options:\n"
-                      << "  --help, -h       Show this help message\n"
-                      << "  --versbose, -v    Enable verbose output\n";
+                      << " --help, -h       Show this help message\n"
+                      << " --versbose, -v   Enable verbose output\n"
+                      << " --silent, -s     Run in silent mode (no TTS output)\n";
             return 0;
         } else if (std::string(argv[i]) == "--verbose" || std::string(argv[i]) == "-v") {
             std::cout << "Verbose mode enabled\n";
             isVerbose = true;
+        } else if (std::string(argv[i]) == "--silent" || std::string(argv[i]) == "-s") {
+            std::cout << "Silent mode enabled (no TTS output)\n";
+            ttsEnabled = false;
         }
     }
     // Load configuration
@@ -133,10 +141,33 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // Initialize TTS voice synthesizer
+    if (ttsEnabled && config.voice.enabled) {
+            // setting voice config
+            voice.setModelPath(config.voice.model_path);
+            voice.setConfigPath(config.voice.config_path);
+            voice.setEspeakDataPath(config.voice.espeak_data_path);
+            voice.setFrequency(config.voice.sample_rate);
+            voice.setFileName(config.voice.output_file);
+            voice.setLengthScale(config.voice.length_scale);
+            voice.setNoiseScale(config.voice.noise_scale);
+            voice.setNoiseWScale(config.voice.noise_w_scale);
+            voice.setVerbose(isVerbose);
+            voice.setEnabled(config.voice.enabled);
+        try {
+            std::cout << "Initializing voice synthesizer... ";
+            voice.init();
+            std::cout << "Done." << std::endl;
+        } catch (const std::exception &e) {
+            std::cerr << "Error initializing voice synthesizer: " << e.what() << std::endl;
+            return 1;
+        }
+    }
+
     // Initialize function calls
     try {
         std::cout << "Initializing function calls... ";
-            FunctionCall::initCommands(config, &client, &chatModel, isVerbose);
+            FunctionCall::initCommands(config, &client, &chatModel, &voice, isVerbose);
         std::cout << "Done." << std::endl;
     } catch (const std::exception &e) {
         std::cerr << "Error initializing function calls: " << e.what() << std::endl;
@@ -168,12 +199,29 @@ int main(int argc, char *argv[]) {
                     std::cout << "Argument: " << arg << std::endl;
                 }
             }
-            std::cout << FunctionCall::call(parsedPhrasePtr, chatModel, client, config, isVerbose) << std::endl;
+            response = FunctionCall::call(parsedPhrasePtr, config, isVerbose);
+            std::cout << response << std::endl;
+            if (ttsEnabled && config.voice.enabled) {
+                if (!response.empty()) {
+                    try {
+                        voice.speak(response);
+                    } catch (const std::exception &e) {
+                        std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
+                    }
+                }
+            }
             retry = false;
         } else if (config.ModelEnable && !retry) {
             retry = true;
         } else {
             std::cout << "Could not parse command." << std::endl;
+            if (ttsEnabled && config.voice.enabled) {
+                try {
+                    voice.speak("Could not parse command.");
+                } catch (const std::exception &e) {
+                    std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
+                }
+            }
             retry = false;
         }
         input = "";
