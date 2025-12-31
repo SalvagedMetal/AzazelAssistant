@@ -1,5 +1,5 @@
 # AzazelAssistant
-## v0.3 MQTT Communication
+## v0.4 The Voices in my Head
 AzazelAssistant is a local, privacy-respecting AI assistant built on top of [llama.cpp](https://github.com/ggml-org/llama.cpp) for efficient LLM inference and [nlohmann/json](https://github.com/nlohmann/json) for lightweight JSON handling. It provides a simple, fast, and extensible interface for interacting with large language models (LLMs) on your own machine—no cloud required. Can send commands to other devices through MQTT protocol.
 
 ---
@@ -24,6 +24,7 @@ These libraries are included manually under a `lib/` subdirectory.
 
 - [`llama.cpp`](https://github.com/ggml-org/llama.cpp): Local LLM inference engine
 - [`nlohmann/json`](https://github.com/nlohmann/json): Modern C++ JSON library
+- [`piper TTS`](https://github.com/OHF-Voice/piper1-gpl): TTS library
 
 This library is included in the `etc/` directory.
 
@@ -84,8 +85,47 @@ mkdir models
 cd models
 pkgx huggingface-cli download bartowski/microsoft_Phi-4-mini-instruct-GGUF  microsoft_Phi-4-mini-instruct-Q6_K_L.gguf --local-dir .
 ````
+### 4. Piper (TTS) setup
+
+Upstream libpiper: https://github.com/OHF-Voice/piper1-gpl
+
+Clone the upstream repo, move its `libpiper` directory into this project's `lib/`, then build inside `lib/libpiper`:
+
+
+clone upstream piper1-gpl
+```
+git clone https://github.com/OHF-Voice/piper1-gpl.git
+```
+#create lib/ and move the libpiper subdirectory into it
+```
+mkdir -p lib
+mv piper1-gpl/libpiper lib/libpiper
+```
+
+(Set model and `espeak-ng` data paths in your runtime config as needed.)
+
+Download synth voice files (example)
+
+Create a directory for Piper voices and download the model, JSON and MODEL_CARD into `models/`:
+
+```
+REPO="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/cori/high"
+cd models
+wget -O en_GB-cori-high.onnx "$REPO/en_GB-cori-high.onnx"
+wget -O en_GB-cori-high.onnx.json "$REPO/en_GB-cori-high.onnx.json"
+wget -O MODEL_CARD "$REPO/MODEL_CARD"
+cd -
+```
 
 ## Building the Assistant
+
+build inside lib/libpiper
+```
+cd lib/libpiper
+mkdir -p build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -- -j
+```
 
 ```
 cmake -B build -S .
@@ -97,14 +137,16 @@ In order to run the application, once you are in the root directory of the proje
 ```
 to run it.
 
+
 ## Project Structure
 
 ```
 AzazelAssistant/
 ├── lib/
 │   ├── llama.cpp/           # LLM backend
-│   └── json/                # JSON library
-├── models/                  # Place GGUF models here
+│   ├── json/                # JSON library
+│   └── libpiper/            # Piper TTS library
+├── models/                  # Place GGUF and TTS models here
 ├── src/                     # Core source code
 ├── tests/                   # Unit test files
 ```
