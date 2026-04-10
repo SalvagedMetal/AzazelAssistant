@@ -4,5 +4,8 @@ CMakeFiles/
 Testing/
 Azazel
 Makefile
-lib/
+lib/json
+lib/libpiper
+lib/llama.cpp
+lib/whisper.cpp
 output.raw
