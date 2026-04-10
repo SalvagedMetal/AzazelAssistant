@@ -10,7 +10,7 @@ include(CTest)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 
 # Disabe unnesessary features in llama.cpp
-set(LLAMMA_BUILD_TESTS OFF CACHE INTERNAL "")
+set(LLAMA_BUILD_TESTS OFF CACHE INTERNAL "")
 set(LLAMA_BUILD_EXAMPLES OFF CACHE INTERNAL "")
 set(LLAMA_BUILD_TOOLS OFF CACHE INTERNAL "")
 set(LLAMA_BUILD_COMMON OFF CACHE INTERNAL "")
@@ -18,11 +18,18 @@ set(LLAMA_BUILD_COMMON OFF CACHE INTERNAL "")
 # Enable LLama.cpp features
 #set(LLAMA_LLGUIDANCE ON CACHE BOOL "Enable LLGuidance for structured output")
 
+# Enable misc libraries
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+
+find_package(Threads REQUIRED)
+
+set(LIB_DIR lib/miniaudio/miniaudio.c lib/miniaudio/miniaudio.h)
+
 # Source files list
 set(SOURCE_DIR src/dateTime.cpp src/dateTime.h src/model.cpp src/model.h 
     src/functionCall.cpp src/commandList.cpp src/functionCall.h
     src/configReader.cpp src/configReader.h src/configVars.h
-    src/mqtt.cpp src/mqtt.h src/voice.cpp src/voice.h)
+    src/mqtt.cpp src/mqtt.h src/voice.cpp src/voice.h src/inputAudio.cpp src/outputAudio.cpp src/audio.h)
 
 set(TEST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin/tests)
 
@@ -32,23 +39,26 @@ add_subdirectory(lib/llama.cpp)
 add_subdirectory(lib/json)
 add_subdirectory(lib/libpiper)
 
-add_executable(Azazel main.cpp ${SOURCE_DIR})
+add_executable(Azazel main.cpp ${SOURCE_DIR} ${LIB_DIR})
 
 # Include external libraries
 target_link_libraries(Azazel PRIVATE llama)
 target_link_libraries(Azazel PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(Azazel PRIVATE mosquitto)
 target_link_libraries(Azazel PRIVATE piper)
+target_link_libraries(Azazel PRIVATE Threads::Threads)
+target_link_libraries(Azazel PRIVATE ${CMAKE_DL_LIBS})
+target_link_libraries(Azazel PRIVATE m)
 
 # Main executable stays in the project root
 set_target_properties(Azazel PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # Enable testing
-set(TEST_EXECUTABLES testConfigReader testDateTime testModel testMqtt testFunctionCall testVoiceTTS)
+set(TEST_EXECUTABLES testConfigReader testDateTime testModel testMqtt testFunctionCall testVoiceTTS testAudioInputOutput)
 
 # Add tests
 foreach(test_exec ${TEST_EXECUTABLES})
-    set(TEST_SOURCES_${test_exec} tests/${test_exec}.cpp ${SOURCE_DIR})
+    set(TEST_SOURCES_${test_exec} tests/${test_exec}.cpp ${SOURCE_DIR} ${LIB_DIR})
     add_executable(${test_exec} ${TEST_SOURCES_${test_exec}})
     target_link_libraries(${test_exec} PRIVATE llama)
     target_link_libraries(${test_exec} PRIVATE nlohmann_json::nlohmann_json)
