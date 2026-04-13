@@ -42,7 +42,7 @@ public:
     const ConfigVars::MQTTConfig getMQTTConfig() const;
     const std::vector<ConfigVars::Commands> getCommandCalls() const;
     const ConfigVars::VoiceConfig getVoiceConfig() const;
-
+    const std::string getConfigData() const;
 };
 
 #endif

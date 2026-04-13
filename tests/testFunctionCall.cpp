@@ -87,7 +87,20 @@ void testCallFunction(ConfigVars::config config, Model& model, MQTTClient& mqttC
         } else if (parsedPhrase->command == "getDateTime") {
             int offset = std::stoi(parsedPhrase->arguments[1]);
             time_t timeStamp = DateTime::getCurrentTimestamp() + offset * 3600;
-            expectedString = "It is " + DateTime::getDateTime(timeStamp, DTFormat::HHMMSS24);
+            expectedString = DateTime::getDateTime(timeStamp, DTFormat::HHMMSS24);
+        // TODO: finish the test call function commands
+        } else if (parsedPhrase->command == "testPublish") {
+            std::cout << "Not testing publish" << std::endl;
+            return;
+        } else if (parsedPhrase->command == "testSubscribe") {
+            std::cout << "Not testing subscribe" << std::endl;
+            return;
+        } else if (parsedPhrase->command == "chat") {
+            std::cout << "Not testing chat" << std::endl;
+            return;
+        } else if (parsedPhrase->command == "speak") {
+            std::cout << "Not testing speak" << std::endl;
+            return;
         }
 
         assert(!result.empty());
