@@ -25,6 +25,7 @@ These libraries are included manually under a `lib/` subdirectory.
 - [`llama.cpp`](https://github.com/ggml-org/llama.cpp): Local LLM inference engine
 - [`nlohmann/json`](https://github.com/nlohmann/json): Modern C++ JSON library
 - [`piper TTS`](https://github.com/OHF-Voice/piper1-gpl): TTS library
+- [`Miniaudio`](https://miniaud.io): Library for the audio engine
 
 This library is included in the `etc/` directory.
 
