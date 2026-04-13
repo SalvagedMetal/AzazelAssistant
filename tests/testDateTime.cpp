@@ -16,7 +16,7 @@ void testGetDateTime() {
     std::string formattedTime = DateTime::getDateTime(TimeStamp,DTFormat::YYYYMMDDHHMMSS);
     std::cout << "Formatted Current Time: " << formattedTime << std::endl;
     assert(formattedTime.size() > 0); // Ensure the string is not empty
-    assert(formattedTime.compare("2023-10-01 12:30:45") == 1); // Check against the expected format
+    assert(formattedTime == "2023-10-01 12:30:45"); // Check against the expected format
 }
 
 void testGetCurrentTimestamp() {
@@ -52,5 +52,6 @@ int main(int argc, char *argv[]) {
         std::cerr << "DateTime Test failed: " << e.what() << std::endl;
         return 1; // Return a non-zero value to indicate failure
     }
+    std::cout << "DateTime Tests Passed!" << std::endl;
     return 0;
 }

@@ -153,3 +153,8 @@ const std::vector<ConfigVars::Commands> ConfigReader::getCommandCalls() const {
 const ConfigVars::VoiceConfig ConfigReader::getVoiceConfig() const {
     return config.voice;
 }
+
+const std::string ConfigReader::getConfigData() const {
+    return configData;
+}
+

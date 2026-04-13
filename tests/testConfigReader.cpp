@@ -5,7 +5,7 @@
 void testReadConfig() {
     ConfigReader configReader;
     configReader.readConfig("../config.json", true);
-    assert(!configReader.getModels().empty());
+    assert(!configReader.getConfigData().empty());
 }
 
 void testParseConfig() {
