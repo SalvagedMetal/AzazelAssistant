@@ -24,7 +24,7 @@ class InputAudio {
 private:
     ma_uint32 sampleRate = 0;
     ma_uint32 channels = 0;
-    float duration = 0;
+    float duration = 0.0f;
     int gain = 0; // Gain in decibels, default is 0 (no gain)
     bool isVerbose = false;
 
@@ -37,21 +37,25 @@ public:
     InputAudio() = default;
     InputAudio(const ma_uint32 sampleRate, const ma_uint32 channels, const bool isVerbose);
     ~InputAudio() = default;
-    void recordAudio(const float duration, const bool saveToFile, const char* filename);
+    void recordAudio(const float duration);
+    void saveToFile(const char* filename);
     void init();
 
-    //Getters and setters
-    void setGain(const int gain);
+    // Getters and Setters
+    void setGain(const int gn) { gain = gn; }
+    void setDuration(const float dur) { duration = dur; }
+    void setIsVerbose(const bool vb) { isVerbose = vb; }
+    void setChannels(const ma_uint32 ch) { channels = ch; }
+    void setSampleRate(const ma_uint32 sr) {sampleRate = sr; }
+    void setAudioBuffer(const std::vector<float> ab) { audioBuffer = ab; } 
 
-    std::vector<float> getAudioBuffer();
-    ma_device_config getdeviceConfig();
-    ma_format getFormat();
-    ma_uint32 getSampleRate();
-    ma_uint32 getChannels();
-    float getGain();
-
+    std::vector<float> getAudioBuffer() { return audioBuffer; }
+    ma_device_config getdeviceConfig() { return deviceConfig; }
+    ma_format getFormat() { return deviceConfig.capture.format; }
+    ma_uint32 getSampleRate() { return sampleRate; }
+    ma_uint32 getChannels() { return channels; }
+    float getGain() { return gain; }
 };
-
 
 
 class OutputAudio {
@@ -77,13 +81,19 @@ public:
     void playFromLastPosistion(); // TODO in tandem with outputaudio.cpp:168
 
     // Getters and Setters
-    void setVolumeScale(const float volumeScale);
+    void setVolumeScale(const float vs) { volumeScale = vs; }
+    void boolIsVerbose(const bool vb) { isVerbose = vb; }
+    void setChannels(const ma_uint32 ch) { channels = ch; }
+    void setSampleRate(const ma_uint32 sr) {sampleRate = sr; }
+    void setAudioBuffer(const std::vector<float> ab) { audioBuffer = ab; }
+    void setIsVerbose(const bool vb) { isVerbose = vb; }
 
-    ma_device_config getDeviceConfig();
-    ma_format getFormat();
-    ma_uint32 getSampleRate();
-    ma_uint32 getChannels();
-    float getVolumeScale();
+    std::vector<float> getAudioBuffer() { return audioBuffer; }
+    ma_device_config getdeviceConfig() { return deviceConfig; }
+    ma_format getFormat() { return deviceConfig.playback.format; }
+    ma_uint32 getSampleRate() { return sampleRate; }
+    ma_uint32 getChannels() { return channels; }
+    float getVolumeScale() { return volumeScale; }
 
 };
 #endif

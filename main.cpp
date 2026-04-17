@@ -3,6 +3,9 @@
 #include "src/mqtt.h"
 #include "src/configReader.h"
 #include "src/voice.h"
+#include "src/audio.h"
+
+#include <thread>
 
 int main(int argc, char *argv[]) {
 
@@ -22,6 +25,8 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<FunctionCall::ParsedPhrase> parsedPhrasePtr = nullptr;
     ConfigReader configReader;
     Voice voice;
+    InputAudio recordVoice;
+    OutputAudio ttsPlayback;
 
 
     // Processing command line arguments
@@ -65,18 +70,41 @@ int main(int argc, char *argv[]) {
                 } else {
                     throw std::runtime_error("MQTT client initialization failed.");
                 }
-                std::cout << "Done." << std::endl;
             } catch (const std::exception &e) {
                 std::cerr << "Error initializing MQTT client: " << e.what() << std::endl;
                 return 1;
             }
         }
+        std::cout << "Done." << std::endl;
+    }
+
+    // Initialise audio
+    if (config.audio.enabled) {
+        std::cout << "Initialising audio... ";
+        recordVoice.setChannels(config.audio.channels);
+        recordVoice.setDuration(5.0f);
+        recordVoice.setGain(config.audio.gain);
+        recordVoice.setSampleRate(config.audio.sampleRate);
+        recordVoice.setIsVerbose(isVerbose);
+        
+        ttsPlayback.setChannels(config.audio.channels);
+        ttsPlayback.setSampleRate(config.voice.sample_rate);
+        ttsPlayback.setIsVerbose(isVerbose);
+        try {
+            recordVoice.init();
+            ttsPlayback.init();
+        } catch (const std::exception &e) {
+            std::cerr << "Error initialising audio: " << e.what() << std::endl;
+            return 1;
+        }
+        std::cout << "Done." << std::endl;
     }
 
     // Initialize the models
     // Only initialize models if enabled in config
     if (config.ModelEnable) {
         // Phrases in a single string to add to the model init message
+        std::cout << "Initialising models... ";
         std::string phrasesString = "";
         for (const auto& command : configReader.getCommandCalls()) {
             for (const auto& phrase : command.phrases) {
@@ -131,50 +159,51 @@ int main(int argc, char *argv[]) {
             }
         }
         try {
-            std::cout << "Initializing models... ";
             commandModel.init();
             chatModel.init();
-            std::cout << "Done." << std::endl;
         } catch (const std::exception &e) {
-            std::cerr << "Error initializing command model: " << e.what() << std::endl;
+            std::cerr << "Error initialising command model: " << e.what() << std::endl;
             return 1;
         }
+        std::cout << "Done." << std::endl;
     }
 
     // Initialize TTS voice synthesizer
     if (ttsEnabled && config.voice.enabled) {
-            // setting voice config
-            voice.setModelPath(config.voice.model_path);
-            voice.setConfigPath(config.voice.config_path);
-            voice.setEspeakDataPath(config.voice.espeak_data_path);
-            voice.setFrequency(config.voice.sample_rate);
-            voice.setFileName(config.voice.output_file);
-            voice.setLengthScale(config.voice.length_scale);
-            voice.setNoiseScale(config.voice.noise_scale);
-            voice.setNoiseWScale(config.voice.noise_w_scale);
-            voice.setVerbose(isVerbose);
-            voice.setEnabled(config.voice.enabled);
+        std::cout << "Initialising voice synthesiser... ";
+        // setting voice config
+        voice.setModelPath(config.voice.model_path);
+        voice.setConfigPath(config.voice.config_path);
+        voice.setEspeakDataPath(config.voice.espeak_data_path);
+        voice.setSampleRate(config.voice.sample_rate);
+        voice.setChannels(1);
+        voice.setLengthScale(config.voice.length_scale);
+        voice.setNoiseScale(config.voice.noise_scale);
+        voice.setNoiseWScale(config.voice.noise_w_scale);
+        voice.setGain(config.voice.gain);
+        voice.setVerbose(isVerbose);
         try {
-            std::cout << "Initializing voice synthesizer... ";
             voice.init();
-            std::cout << "Done." << std::endl;
         } catch (const std::exception &e) {
-            std::cerr << "Error initializing voice synthesizer: " << e.what() << std::endl;
+            std::cerr << "Error initialising voice synthesiser: " << e.what() << std::endl;
             return 1;
         }
+        std::cout << "Done." << std::endl;
     }
 
     // Initialize function calls
     try {
-        std::cout << "Initializing function calls... ";
-            FunctionCall::initCommands(config, &client, &chatModel, &voice, isVerbose);
-        std::cout << "Done." << std::endl;
+        std::cout << "Initialising function calls... ";
+        FunctionCall::initCommands(config, &client, &chatModel, &voice, &recordVoice, &ttsPlayback, isVerbose);
     } catch (const std::exception &e) {
-        std::cerr << "Error initializing function calls: " << e.what() << std::endl;
+        std::cerr << "Error initialising function calls: " << e.what() << std::endl;
         return 1;
     }
+    std::cout << "Done." << std::endl;
 
-    std::cout << "Azazel Assistant v0.3 is running...\n";
+    std::cout << "Azazel Assistant v0.4 is running...\n";
+
+
     // Main loop
     while (true) {
         if (!retry || !config.ModelEnable) {
@@ -204,7 +233,12 @@ int main(int argc, char *argv[]) {
             if (ttsEnabled && config.voice.enabled) {
                 if (!response.empty()) {
                     try {
-                        voice.speak(response);
+                        voice.synthesise(response);
+                        if (isVerbose) {
+                            voice.saveToFile("Output.wav");
+                            std::cout << "saving sythesis to file" << std::endl;
+                        }
+                        ttsPlayback.playAudioBuffer(voice.getAudioData());
                     } catch (const std::exception &e) {
                         std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
                     }
@@ -217,7 +251,12 @@ int main(int argc, char *argv[]) {
             std::cout << "Could not parse command." << std::endl;
             if (ttsEnabled && config.voice.enabled) {
                 try {
-                    voice.speak("Could not parse command.");
+                    voice.synthesise("Could not parse command.");
+                    if (isVerbose) {
+                        voice.saveToFile("Output.wav");
+                        std::cout << "saving sythesis to file" << std::endl;   
+                    }
+                    ttsPlayback.playAudioBuffer(voice.getAudioData());
                 } catch (const std::exception &e) {
                     std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
                 }
@@ -226,6 +265,7 @@ int main(int argc, char *argv[]) {
         }
         input = "";
         parsedPhrasePtr = nullptr;
+        response = "";
     }
     return 0;
 }

@@ -11,6 +11,9 @@
 class Model;
 class MQTTClient;
 class Voice;
+class InputAudio;
+class OutputAudio;
+
 namespace ConfigVars {
     struct Model;
     struct MQTTCommand;
@@ -86,7 +89,7 @@ namespace FunctionCall {
         Model* model                                                    || Pointer to Model instance
         const bool isVerbose                                            || Whether to print verbose output
     */
-    void initCommands(const ConfigVars::config& config, MQTTClient* client, Model* model, Voice* voice, const bool isVerbose);
+    void initCommands(const ConfigVars::config& config, MQTTClient* mqttClient, Model* model, Voice* voice, InputAudio* recordVoice, OutputAudio* ttsPlayback, const bool isVerbose);
 }
 
 #endif

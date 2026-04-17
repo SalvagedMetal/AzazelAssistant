@@ -26,6 +26,18 @@ void ConfigReader::parseConfig() {
         return;
     }
 
+    // Parse Audio
+    if (configJson.contains("audio") && configJson["audio"].is_object()) {
+        const auto& audioJson = configJson["audio"];
+
+        config.audio.enabled = audioJson.value("enabled", false);
+        config.audio.sampleRate = audioJson.value("sample_rate", 48000);
+        config.audio.channels = audioJson.value("channels", 1);
+        config.audio.gain = audioJson.value("gain", 0);
+    } else { 
+        throw std::runtime_error("Config JSON does not contain 'audio' object");
+    }
+
     // Parse models
     if (!configJson.contains("models") || !configJson["models"].is_array())
         throw std::runtime_error("Config JSON does not contain 'models' array");
@@ -124,8 +136,8 @@ void ConfigReader::parseConfig() {
         config.voice.model_path = voiceJson.value("model_path", "");
         config.voice.config_path = voiceJson.value("config_path", "");
         config.voice.espeak_data_path = voiceJson.value("espeak_path", "");
-        config.voice.sample_rate = voiceJson.value("sample_rate", 22050);
-        config.voice.output_file = voiceJson.value("output_file", "output.raw");
+        config.voice.gain = voiceJson.value("gain", 0);
+        config.voice.sample_rate = voiceJson.value("sample_rate", 24000);
         config.voice.length_scale = voiceJson.value("length_scale", 1.0f);
         config.voice.noise_scale = voiceJson.value("noise_scale", 0.667f);
         config.voice.noise_w_scale = voiceJson.value("noise_w_scale", 0.8f);
@@ -156,5 +168,9 @@ const ConfigVars::VoiceConfig ConfigReader::getVoiceConfig() const {
 
 const std::string ConfigReader::getConfigData() const {
     return configData;
+}
+
+const ConfigVars::AudioConfig ConfigReader::getAudioConfig() const {
+    return config.audio;
 }
 

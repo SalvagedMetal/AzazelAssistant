@@ -1,11 +1,15 @@
 #ifndef VOICE_H
 #define VOICE_H
 
-#include "piper.h"
 #include <string>
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <cstring>
+#include <cmath>
+
+#include "piper.h"
+#include "../lib/miniaudio/miniaudio.h"
 
 
 class Voice {
@@ -16,22 +20,23 @@ private:
     piper_synthesizer *synth = nullptr;
     
     piper_synthesize_options options;
-    std::ofstream audio_stream;
-    std::string fileName;
-    int frequency;
+    uint32_t sampleRate;
+    uint32_t channels;
     bool isVerbose;
-    bool enabled;
     float lengthScale;
     float noiseScale;
     float noiseWScale;
-    float volumeScale = 1.0f;
+    int gain = 0;
+    std::vector<float> audioData;
+    
 
 public:
     Voice() = default;
     Voice(const std::string& modelPath, const std::string& configPath, const std::string& espeakDataPath,
-            int freq, std::string fn, float lengthScale, float noiseScale, float noiseWScale, bool enabled, bool isVerbose);
+            uint32_t sampleRate, uint32_t channels, float lengthScale, float noiseScale, float noiseWScale, bool isVerbose);
     ~Voice();
-    void speak(std::string text);
+    void synthesise(const std::string text);
+    void saveToFile(const char* filename);
     void init();
 
 
@@ -39,26 +44,26 @@ public:
     void setModelPath(const std::string& path) { modelPath = path; }
     void setConfigPath(const std::string& path) { configPath = path; }
     void setEspeakDataPath(const std::string& path) { espeakDataPath = path; }
-    void setFileName(const std::string& fn) { fileName = fn; }
-    void setFrequency(int freq) { frequency = freq; }
+    void setSampleRate(uint32_t sr) { sampleRate = sr; }
     void setLengthScale(float scale) { lengthScale = scale; }
     void setNoiseScale(float scale) { noiseScale = scale; }
     void setNoiseWScale(float scale) { noiseWScale = scale; }
-    void setEnabled(bool en) { enabled = en; }
     void setVerbose(bool vb) { isVerbose = vb; }
-    void setVolumeScale(float scale) { volumeScale = scale; }
+    void setGain(int gn) { gain = gn; }
+    void setAudioDate(std::vector<float> ad) { audioData = ad; }
+    void setChannels(uint32_t ch) { channels = ch; }
 
     const std::string& getModelPath() const { return modelPath; }
     const std::string& getConfigPath() const { return configPath; }
     const std::string& getEspeakDataPath() const { return espeakDataPath; }
-    const std::string& getFileName() const { return fileName; }
-    int getFrequency() const { return frequency; }
+    uint32_t getSampleRate() const { return sampleRate; }
     float getLengthScale() const { return lengthScale; }
     float getNoiseScale() const { return noiseScale; }
     float getNoiseWScale() const { return noiseWScale; }
-    bool getEnabled() const { return enabled; }
     bool getVerbose() const { return isVerbose; }
-    float getVolumeScale() const { return volumeScale; }
+    float getGain() const { return gain; }
+    std::vector<float> getAudioData() { return audioData; }
+    uint32_t getChannels() const { return channels; }
 };
 
 #endif

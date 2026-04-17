@@ -1,4 +1,10 @@
 {
+    "audio" : {
+        "enabled" : true,
+        "channels" : 1,
+        "sample_rate" : 44100,
+        "gain" : 30
+    },
     "modelEnabled": true,
     "models": [
         {
@@ -160,6 +166,6 @@
         "length_scale": 1.0,
         "noise_scale": 0.667,
         "noise_scale_w": 0.8,
-        "output_file": "output.raw"
+        "gain" : 10
     }
 }

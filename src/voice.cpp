@@ -8,9 +8,10 @@ Voice::~Voice() {
 }
 
 Voice::Voice(const std::string& modelPath, const std::string& configPath, const std::string& espeakDataPath,
-                int frequency, std::string fileName, float lengthScale, float noiseScale, float noiseWScale,  bool enabled, bool isVerbose)
+                uint32_t sampleRate, uint32_t channels, float lengthScale, float noiseScale, float noiseWScale,
+                bool isVerbose)
     : modelPath(modelPath), configPath(configPath), espeakDataPath(espeakDataPath),
-    frequency(frequency), fileName(fileName), enabled(enabled), isVerbose(isVerbose),
+    sampleRate(sampleRate), channels(channels), isVerbose(isVerbose),
     lengthScale(lengthScale), noiseScale(noiseScale), noiseWScale(noiseWScale) {
 }
 
@@ -27,33 +28,52 @@ void Voice::init() {
     if (isVerbose) std::cout << "Voice synthesizer initialized." << std::endl;
 }
 
-void Voice::speak(std::string text) {
+void Voice::synthesise(const std::string text) {
     if (isVerbose) std::cout << "Starting synthesis for text: " << text << std::endl;
-    piper_synthesize_start(synth, text.c_str(), &options);
     piper_audio_chunk chunk;
-    std::vector<float> audio_data;
+    chunk.sample_rate = sampleRate;
     float tempSamples = 0;
+    audioData.clear();
 
-    audio_stream.open(fileName, std::ios::binary);
-    if (!audio_stream.is_open()) {
-        throw std::runtime_error("Failed to open audio output file.");
-    }
+    piper_synthesize_start(synth, text.c_str(), &options);
     while (piper_synthesize_next(synth, &chunk) != PIPER_DONE) {
-        // Volume scaling
-        for (int i = 0; i < chunk.num_samples; i++) {
-            tempSamples = chunk.samples[i] * volumeScale;
-            if (tempSamples > 1.0f) tempSamples = 1.0f;
-            if (tempSamples < -1.0f) tempSamples = -1.0f;
-            const_cast<float*>(chunk.samples)[i] = tempSamples;
+        if (isVerbose) std::cout << "Gain setting at " << gain << "dB" << std::endl;
+        // Gain control
+        if (gain != 0) {
+            float gainFactor = pow(10.0f, gain / 20.0f); // Convert dB to linear
+            for (auto& sample : audioData) {
+                sample *= gainFactor;
+                sample = std::max(-1.0f, std::min(1.0f, sample)); // [-1.0, 1.0]
+            }
         }
-        audio_stream.write(reinterpret_cast<const char *>(chunk.samples),
-                           chunk.num_samples * sizeof(float));
-        audio_data.insert(audio_data.end(), chunk.samples, chunk.samples + chunk.num_samples);
+        if (chunk.num_phoneme_ids > 0) {
+            audioData.insert(audioData.end(), chunk.samples, chunk.samples + chunk.num_samples);
+        }
     }
-    audio_stream.close();
-    if (audio_data.empty()) {
-        throw std::runtime_error("No audio data was generated.");
+}
+
+void Voice::saveToFile(const char* filename) {
+    if (isVerbose) std::cout << "Saving to file " << ((filename == nullptr) ? "output_audio.wav" : filename) << std::endl;
+    ma_encoder encoder;
+    ma_encoder_config encoderConfig;
+    const char* lFilename;
+
+    if (audioData.empty()) {
+        audioData.push_back(0.0f); // Ensure one sample to write
     }
-    std::string playCommand = "aplay -r " + std::to_string(frequency) + " -c 1 -f FLOAT_LE -t raw " + fileName + " -q";
-    system(playCommand.c_str());
+    if (filename == nullptr || std::strlen(filename) == 0) {
+        lFilename = "output_audio.wav"; // Default filename
+    } else {
+        lFilename = filename;
+    }
+    encoderConfig = ma_encoder_config_init(ma_encoding_format_wav, ma_format_f32, (ma_uint32) channels, (ma_uint32) sampleRate);
+
+    if (ma_encoder_init_file(lFilename, &encoderConfig, &encoder) != MA_SUCCESS) {
+        throw std::runtime_error("Failed to initialize encoder.");
+    }
+    
+    ma_encoder_write_pcm_frames(&encoder, audioData.data(), audioData.size(), NULL);
+
+    ma_encoder_uninit(&encoder);
+    lFilename = nullptr;
 }

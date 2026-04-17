@@ -56,10 +56,17 @@ namespace ConfigVars {
         std::string config_path;
         std::string espeak_data_path;
         int sample_rate;
-        std::string output_file;
+        int gain;
         float length_scale;
         float noise_scale;
         float noise_w_scale;
+    };
+
+    struct AudioConfig {
+        bool enabled;
+        uint32_t channels;
+        uint32_t sampleRate;
+        int gain;
     };
     
     // Overall configuration structure
@@ -69,6 +76,7 @@ namespace ConfigVars {
         MQTTConfig mqtt;
         std::vector<Commands> commandCalls;
         VoiceConfig voice;
+        AudioConfig audio;
     };
 };
 

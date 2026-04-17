@@ -41,6 +41,18 @@ void testMQTTConfig() {
     assert(!mqttConfig.client_id.empty());
 }
 
+void testCommandConfig() {
+
+}
+
+void testTTSConfig() {
+
+}
+
+void testAudioConfig() {
+    
+}
+
 int main() {
     try {
         std::cout << "Running ConfigReader tests..." << std::endl;

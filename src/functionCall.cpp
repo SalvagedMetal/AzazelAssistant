@@ -49,7 +49,7 @@ std::string FunctionCall::call(const std::unique_ptr<FunctionCall::ParsedPhrase>
             for (const auto& confCmd : config.commandCalls) {
                 if ((confCmd.name == cmd.command) && confCmd.confirmation) {
                     std::string userInput;
-                    std::cout << "Are you sure you want to execute the command '" << cmd.command << "' with " << ParsedCommand->arguments.size() << " arguments? (yes/no): ";
+                    std::cout << "Are you sure you want to execute the command '" << cmd.command << "(yes/no): ";
                     std::getline(std::cin, userInput);
                     std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
                     if (userInput != "yes" && userInput != "y") {
@@ -58,8 +58,7 @@ std::string FunctionCall::call(const std::unique_ptr<FunctionCall::ParsedPhrase>
                 }
             }
             if (isVerbose) std::cout << "Executing command: " << cmd.command << std::endl;
-            std::string response = cmd.function(ParsedCommand->arguments);
-            return response;
+            return cmd.function(ParsedCommand->arguments);
         }
     }
     return "Could not find command";
