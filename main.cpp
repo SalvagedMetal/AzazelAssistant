@@ -6,6 +6,13 @@
 #include "src/audio.h"
 
 #include <thread>
+#include <mutex>
+#include <condition_variable>
+
+
+//shared thread objects
+std::mutex tts_mtx;
+std::condition_variable tts_cv;
 
 int main(int argc, char *argv[]) {
 
@@ -27,6 +34,8 @@ int main(int argc, char *argv[]) {
     Voice voice;
     InputAudio recordVoice;
     OutputAudio ttsPlayback;
+    std::queue<std::vector<float>> theVoices;
+
 
 
     // Processing command line arguments
@@ -63,7 +72,7 @@ int main(int argc, char *argv[]) {
         client.setVerbose(isVerbose);
         if (mqttConfig.enabled) {
             try {
-                std::cout << "Initializing MQTT client... ";
+                std::cout << "Initialising MQTT client... ";
                 client.Init(mqttConfig.username, mqttConfig.password, mqttConfig.client_id, mqttConfig.clean_session);
                 if (client.isInitialized()) {
                     client.Start(mqttConfig.broker_ip, mqttConfig.broker_port, mqttConfig.keepalive);
@@ -201,6 +210,22 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "Done." << std::endl;
 
+
+    // Set up thread loops
+    std::thread ttsThread([&ttsPlayback, &theVoices] {
+        while(true) {
+            std::vector<float> playBack;
+            {
+                std::unique_lock<std::mutex> lock(tts_mtx);
+                tts_cv.wait(lock, [&theVoices] { return !theVoices.empty(); });
+
+                playBack = std::move(theVoices.front());
+                theVoices.pop();
+            }
+            ttsPlayback.playAudioBuffer(playBack);
+        }
+    });
+
     std::cout << "Azazel Assistant v0.4 is running...\n";
 
 
@@ -234,14 +259,16 @@ int main(int argc, char *argv[]) {
                 if (!response.empty()) {
                     try {
                         voice.synthesise(response);
+                        std::lock_guard<std::mutex> lock(tts_mtx);
+                        theVoices.push(voice.getAudioData());
                         if (isVerbose) {
                             voice.saveToFile("Output.wav");
                             std::cout << "saving sythesis to file" << std::endl;
                         }
-                        ttsPlayback.playAudioBuffer(voice.getAudioData());
                     } catch (const std::exception &e) {
                         std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
                     }
+                    tts_cv.notify_one();
                 }
             }
             retry = false;
@@ -251,15 +278,17 @@ int main(int argc, char *argv[]) {
             std::cout << "Could not parse command." << std::endl;
             if (ttsEnabled && config.voice.enabled) {
                 try {
-                    voice.synthesise("Could not parse command.");
-                    if (isVerbose) {
-                        voice.saveToFile("Output.wav");
-                        std::cout << "saving sythesis to file" << std::endl;   
-                    }
-                    ttsPlayback.playAudioBuffer(voice.getAudioData());
+                    voice.synthesise("Could not parse command");
+                        std::lock_guard<std::mutex> lock(tts_mtx);
+                        theVoices.push(voice.getAudioData());
+                        if (isVerbose) {
+                            voice.saveToFile("Output.wav");
+                            std::cout << "saving sythesis to file" << std::endl;
+                        }
                 } catch (const std::exception &e) {
                     std::cerr << "Error during TTS synthesis: " << e.what() << std::endl;
                 }
+                tts_cv.notify_one();
             }
             retry = false;
         }
@@ -267,5 +296,6 @@ int main(int argc, char *argv[]) {
         parsedPhrasePtr = nullptr;
         response = "";
     }
+    ttsThread.join();
     return 0;
 }
