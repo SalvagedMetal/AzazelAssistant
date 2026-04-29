@@ -1,6 +1,7 @@
-cmake_minimum_required (VERSION 3.25)
+cmake_minimum_required (VERSION 3.26)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(Azazel)
 
@@ -38,6 +39,7 @@ include_directories(${CMAKE_SOURCE_DIR}/lib/libpiper/include)
 add_subdirectory(lib/llama.cpp)
 add_subdirectory(lib/json)
 add_subdirectory(lib/libpiper)
+add_subdirectory(lib/whisper.cpp)
 
 add_executable(Azazel main.cpp ${SOURCE_DIR} ${LIB_DIR})
 
@@ -49,6 +51,11 @@ target_link_libraries(Azazel PRIVATE piper)
 target_link_libraries(Azazel PRIVATE Threads::Threads)
 target_link_libraries(Azazel PRIVATE ${CMAKE_DL_LIBS})
 target_link_libraries(Azazel PRIVATE m)
+target_link_libraries(Azazel PRIVATE whisper)
+
+# Target Includes when necessary
+target_include_directories(Azazel PRIVATE lib/whisper.cpp/include)
+
 
 # Main executable stays in the project root
 set_target_properties(Azazel PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
@@ -64,6 +71,7 @@ foreach(test_exec ${TEST_EXECUTABLES})
     target_link_libraries(${test_exec} PRIVATE nlohmann_json::nlohmann_json)
     target_link_libraries(${test_exec} PRIVATE mosquitto)
     target_link_libraries(${test_exec} PRIVATE piper)
+    target_link_libraries(${test_exec} PRIVATE whisper)
     set_target_properties(${test_exec} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIR})
     add_test(NAME ${test_exec} COMMAND ${test_exec})
 endforeach()
