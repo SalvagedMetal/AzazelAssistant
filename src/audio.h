@@ -4,12 +4,14 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <stdexcept>
 #include <cmath>
 #include <thread>
 #include <chrono>
+#include <mutex>
+#include <condition_variable>
 #include <cstring>
 #include <atomic>
+#include <utility>
 
 #include "../lib/miniaudio/miniaudio.h"
 
@@ -29,6 +31,8 @@ private:
     float duration = 0.0f;
     int gain = 0; // Gain in decibels, default is 0 (no gain)
     bool isVerbose = false;
+    bool running = true;
+    int targetSamples = 0;
 
     // struct for filtering
     struct filter {
@@ -44,8 +48,9 @@ private:
     ma_lpf_config lpFilterConfig;
     ma_bpf_config bpFilterConfig;
     ma_device device;
-    std::vector<float> audioBuffer;
+    std::vector<float> audioData;
 
+    // Data to enter callback
     struct AudioContext {
         std::vector<float> audioBuffer;
         std::vector<float> tempBuffer;
@@ -54,16 +59,24 @@ private:
         ma_bpf bpf;
         int type = 0;
         ma_uint32 channels;
+        ma_rb ringBuffer;
     };
     AudioContext ctx;
+
+    // Co-ordination objects
+    std::mutex data_mtx;
+    std::condition_variable data_cv;
+    bool dataReady = false;
 
 public:
     InputAudio() = default;
     InputAudio(const ma_uint32 sampleRate, const ma_uint32 channels, const int filterType, const bool isVerbose);
     ~InputAudio() = default;
     void recordAudio(const float duration);
-    void saveToFile(const char* filename);
+    void streamAudio(const float maxDuration);
+    void saveToFile(const char* filename, const std::vector<float> &data);
     void init();
+    void clearData();
 
     // Getters and Setters
     void setGain(const int gn) { gain = gn; }
@@ -71,12 +84,14 @@ public:
     void setIsVerbose(const bool vb) { isVerbose = vb; }
     void setChannels(const ma_uint32 ch) { channels = ch; }
     void setSampleRate(const ma_uint32 sr) {sampleRate = sr; }
-    void setAudioBuffer(const std::vector<float> ab) { audioBuffer = ab; } 
+    void setAudioData(const std::vector<float> ad) { audioData = ad; } 
     void setFilterType(const int filterType) { filter.type = filterType; }
     void setFilterOrder(const ma_uint32 order) { filter.order = order; }
     void setFilterCutoff(const double cutoff) { filter.cutoff = cutoff; }
+    void setRunning(const bool run) { running = run; }
 
-    std::vector<float> getAudioBuffer() { return audioBuffer; }
+    std::vector<float> getAudioData(); // defined in inputAudio.cpp
+    std::vector<float> moveStreamedAudioData(); // defined in inputAudio.cpp
     ma_device_config getdeviceConfig() { return deviceConfig; }
     ma_format getFormat() { return deviceConfig.capture.format; }
     ma_uint32 getSampleRate() { return sampleRate; }
@@ -85,6 +100,7 @@ public:
     int getFilterTyoe() { return filter.type; }
     ma_uint32 getFilterOrder() { return filter.order; }
     double getFilterCutoff() { return filter.cutoff; }
+    bool setRunning() { return running; }
 };
 
 
@@ -132,6 +148,6 @@ public:
     ma_uint32 getSampleRate() { return sampleRate; }
     ma_uint32 getChannels() { return channels; }
     float getVolumeScale() { return volumeScale; }
-
 };
+
 #endif
