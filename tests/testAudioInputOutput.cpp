@@ -2,13 +2,13 @@
 #include <cassert>
 
 void testInputInit() {
-    InputAudio testAudio(48000, 1, Audio::Filter::NONE, true);
+    InputAudio testAudio(48000, 1, true);
     testAudio.init();
     assert(testAudio.getFormat() == ma_format_f32);
 }
 
 void testInputRecord() {
-    InputAudio testAudio(48000, 1, Audio::Filter::NONE, true);
+    InputAudio testAudio(48000, 1, true);
     testAudio.init();
     testAudio.recordAudio(0.1);
     testAudio.saveToFile("test_file1.wav", testAudio.getAudioData());
@@ -22,7 +22,7 @@ void testOutputInit() {
 
 void testOuputPlayfile() {
     OutputAudio testAudio(48000, 1, true);
-    InputAudio testInput(48000, 1, Audio::Filter::NONE, true);
+    InputAudio testInput(48000, 1, true);
     testInput.init();
     testAudio.init();
 
@@ -33,7 +33,7 @@ void testOuputPlayfile() {
 
 void testOutputPlayBuffer() {
     OutputAudio testAudio(48000, 1, true);
-    InputAudio testInput(48000, 1, Audio::Filter::NONE, true);
+    InputAudio testInput(48000, 1, true);
     testInput.init();
     testAudio.init();
 
