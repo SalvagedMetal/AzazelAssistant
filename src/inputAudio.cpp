@@ -1,9 +1,8 @@
 #include "audio.h"
 
-InputAudio::InputAudio(const ma_uint32 sampleRate, const ma_uint32 channels, const int filterType, const bool isVerbose) :
-    sampleRate(sampleRate), channels(channels), isVerbose(isVerbose) {
-        filter.type = filterType;
-    }
+InputAudio::InputAudio(const ma_uint32 sampleRate, const ma_uint32 channels, const bool isVerbose) :
+    sampleRate(sampleRate), channels(channels), isVerbose(isVerbose) {}
+
 
 void InputAudio::init() {
     if (isVerbose) std::cout << "Starting Input Audio Initilisation" << std::endl;
@@ -12,23 +11,6 @@ void InputAudio::init() {
     deviceConfig.capture.channels = channels;
     deviceConfig.sampleRate = sampleRate;
 
-    switch (filter.type) {
-        case Audio::Filter::HPF:
-            hpFilterConfig = ma_hpf_config_init(ma_format_f32, channels, sampleRate, filter.cutoff, filter.order);
-            ctx.type = Audio::Filter::HPF;
-        break;
-        case Audio::Filter::LPF:
-            lpFilterConfig = ma_lpf_config_init(ma_format_f32, channels, sampleRate, filter.cutoff, filter.order);
-            ctx.type = Audio::Filter::LPF;
-        break;
-        case Audio::Filter::BANDPF:
-            bpFilterConfig = ma_bpf_config_init(ma_format_f32, channels, sampleRate, filter.cutoff, filter.order);
-            ctx.type = Audio::Filter::BANDPF;
-        break;
-        default:
-            ctx.type = Audio::Filter::NONE;
-        break;
-    }
     ctx.channels = channels;
     deviceConfig.pUserData = &ctx;
 }
@@ -38,29 +20,31 @@ void InputAudio::recordAudio(const float duration) {
     // Initilise callback
     deviceConfig.dataCallback = [](ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
         auto *ctx = (AudioContext*)pDevice->pUserData;
-
-        // Make sure buffer is big enough
-        ctx->tempBuffer.resize(frameCount * ctx->channels);
+        const float *input = (const float*)pInput; // so that previous filters don't overwrite eachother
         
-        switch(ctx->type) {
-            case Audio::Filter::HPF:
-                if (ma_hpf_process_pcm_frames(&ctx->hpf, ctx->tempBuffer.data(), pInput, frameCount) != MA_SUCCESS) {
-                    std::cout << "Failure processing High Pass Filter frames" << std::endl;
+        if (ctx->filters.empty()) {
+            std::memcpy(ctx->tempBuffer.data(), input, (frameCount * ctx->channels) * sizeof(float));
+        } else {
+            for (auto& f : ctx->filters) {
+                switch(f.type) {
+                    case Audio::Filter::HPF:
+                        if (ma_hpf_process_pcm_frames(&f.hpf, ctx->tempBuffer.data(), input, frameCount) != MA_SUCCESS) {
+                            std::cout << "Failure processing High Pass Filter frames" << std::endl;
+                        }
+                    break;
+                    case Audio::Filter::LPF:
+                        if (ma_lpf_process_pcm_frames(&f.lpf, ctx->tempBuffer.data(), input, frameCount) != MA_SUCCESS) {
+                            std::cout << "Failure processing Low Pass Filter frames" << std::endl;
+                        }
+                    break;
+                    case Audio::Filter::BANDPF:
+                        if (ma_bpf_process_pcm_frames(&f.bpf, ctx->tempBuffer.data(), input, frameCount) != MA_SUCCESS) {
+                            std::cout << "Failure processing Band Pass Filter frames" << std::endl;
+                        }
+                    break;
                 }
-            break;
-            case Audio::Filter::LPF:
-                if (ma_lpf_process_pcm_frames(&ctx->lpf, ctx->tempBuffer.data(), pInput, frameCount) != MA_SUCCESS) {
-                    std::cout << "Failure processing Low Pass Filter frames" << std::endl;
-                }
-            break;
-            case Audio::Filter::BANDPF:
-                if (ma_bpf_process_pcm_frames(&ctx->bpf, ctx->tempBuffer.data(), pInput, frameCount) != MA_SUCCESS) {
-                    std::cout << "Failure processing Band Pass Filter frames" << std::endl;
-                }
-            break;
-            default:
-                std::memcpy(ctx->tempBuffer.data(), pInput, (frameCount * ctx->channels) * sizeof(float));
-            break;
+                input = ctx->tempBuffer.data();
+            }
         }
 
         ctx->audioBuffer.insert(ctx->audioBuffer.end(), ctx->tempBuffer.begin(), ctx->tempBuffer.begin() + (frameCount * ctx->channels));
@@ -68,26 +52,38 @@ void InputAudio::recordAudio(const float duration) {
         (void)pOutput;
     };
 
+    ma_hpf_config hpFilterConfig;
+    ma_lpf_config lpFilterConfig;
+    ma_bpf_config bpFilterConfig;
+
     // Initilise filters
-    switch (filter.type) {
-        case Audio::Filter::HPF:
-            if (ma_hpf_init(&hpFilterConfig, nullptr, &ctx.hpf) != MA_SUCCESS) {
-                throw std::runtime_error("Failed to initialise High Pass Filter.");
-            }
-        break;
-        case Audio::Filter::LPF:
-            if (ma_lpf_init(&lpFilterConfig, nullptr, &ctx.lpf) != MA_SUCCESS) {
-                throw std::runtime_error("Failed to initialise Low Pass Filter.");
-            }
-        break;
-        case Audio::Filter::BANDPF:
-            if (ma_bpf_init(&bpFilterConfig, nullptr, &ctx.bpf) != MA_SUCCESS) {
-                throw std::runtime_error("Failed to initialise Low Pass Filter.");
-            }
-        default:
-            ctx.type = Audio::Filter::NONE;
-        break;
+    if (isVerbose) std::cout << "Initilising Filters" << std::endl;
+    for (auto& f : ctx.filters) {
+        switch (f.type) {
+            case Audio::Filter::HPF:
+                hpFilterConfig = ma_hpf_config_init(ma_format_f32, channels, sampleRate, f.cutoff, f.order);
+                if (ma_hpf_init(&hpFilterConfig, nullptr, &f.hpf) != MA_SUCCESS) {
+                    throw std::runtime_error("Failed to initialise High Pass Filter.");
+                }
+            break;
+            case Audio::Filter::LPF:
+                lpFilterConfig = ma_lpf_config_init(ma_format_f32, channels, sampleRate, f.cutoff, f.order);
+                if (ma_lpf_init(&lpFilterConfig, nullptr, &f.lpf) != MA_SUCCESS) {
+                    throw std::runtime_error("Failed to initialise Low Pass Filter.");
+                }
+            break;
+            case Audio::Filter::BANDPF:
+                bpFilterConfig = ma_bpf_config_init(ma_format_f32, channels, sampleRate, f.cutoff, f.order);
+                if (ma_bpf_init(&bpFilterConfig, nullptr, &f.bpf) != MA_SUCCESS) {
+                    throw std::runtime_error("Failed to initialise Low Pass Filter.");
+                }
+            break;
+            default:
+                f.type = Audio::Filter::NONE;
+            break;
+        }
     }
+
     ctx.audioBuffer.clear();
     ctx.tempBuffer.clear();
     // preallocate memory before being used in audio thread
@@ -108,16 +104,18 @@ void InputAudio::recordAudio(const float duration) {
     ma_device_uninit(&device);
     
     // Uninitilise filters
-    switch (filter.type) {
-        case Audio::Filter::HPF:
-            ma_hpf_uninit(&ctx.hpf, nullptr);
-        break;
-        case Audio::Filter::LPF:
-            ma_lpf_uninit(&ctx.lpf, nullptr);
-        break;
-        case Audio::Filter::BANDPF:
-            ma_bpf_uninit(&ctx.bpf, nullptr);
-        break;
+    for (auto& f : ctx.filters) {
+        switch (f.type) {
+            case Audio::Filter::HPF:
+                ma_hpf_uninit(&f.hpf, nullptr);
+            break;
+            case Audio::Filter::LPF:
+                ma_lpf_uninit(&f.lpf, nullptr);
+            break;
+            case Audio::Filter::BANDPF:
+                ma_bpf_uninit(&f.bpf, nullptr);
+            break;
+        }
     }
 
     {
@@ -177,28 +175,31 @@ void InputAudio::streamAudio(const float maxDuration) {
         // allocate size
         size_t byteSize = frameCount * ctx->channels * sizeof(float);
         void *pWrite = nullptr;
-        // Make sure buffer is big enough
-        ctx->tempBuffer.resize(frameCount * ctx->channels);
+        const float *input = (const float*)pInput; // so that previous filters don't overwrite eachother
 
-        switch(ctx->type) {
-            case Audio::Filter::HPF:
-                if (ma_hpf_process_pcm_frames(&ctx->hpf, ctx->tempBuffer.data(), pInput, frameCount) != MA_SUCCESS) {
-                    std::cout << "Failure processing High Pass Filter frames" << std::endl;
+        if (ctx->filters.empty()) {
+            std::memcpy(ctx->tempBuffer.data(), input, (frameCount * ctx->channels) * sizeof(float));
+        } else {
+            for (auto& f : ctx->filters) {
+                switch(f.type) {
+                    case Audio::Filter::HPF:
+                        if (ma_hpf_process_pcm_frames(&f.hpf, ctx->tempBuffer.data(), input, frameCount) != MA_SUCCESS) {
+                            std::cout << "Failure processing High Pass Filter frames" << std::endl;
+                        }
+                    break;
+                    case Audio::Filter::LPF:
+                        if (ma_lpf_process_pcm_frames(&f.lpf, ctx->tempBuffer.data(), input, frameCount) != MA_SUCCESS) {
+                            std::cout << "Failure processing Low Pass Filter frames" << std::endl;
+                        }
+                    break;
+                    case Audio::Filter::BANDPF:
+                        if (ma_bpf_process_pcm_frames(&f.bpf, ctx->tempBuffer.data(), input, frameCount) != MA_SUCCESS) {
+                            std::cout << "Failure processing Band Pass Filter frames" << std::endl;
+                        }
+                    break;
                 }
-            break;
-            case Audio::Filter::LPF:
-                if (ma_lpf_process_pcm_frames(&ctx->lpf, ctx->tempBuffer.data(), pInput, frameCount) != MA_SUCCESS) {
-                    std::cout << "Failure processing Low Pass Filter frames" << std::endl;
-                }
-            break;
-            case Audio::Filter::BANDPF:
-                if (ma_bpf_process_pcm_frames(&ctx->bpf, ctx->tempBuffer.data(), pInput, frameCount) != MA_SUCCESS) {
-                    std::cout << "Failure processing Band Pass Filter frames" << std::endl;
-                }
-            break;
-            default:
-                std::memcpy(ctx->tempBuffer.data(), pInput, (frameCount * ctx->channels) * sizeof(float));
-            break;
+                input = ctx->tempBuffer.data();
+            }
         }
         
         ma_rb_acquire_write(&ctx->ringBuffer, &byteSize, &pWrite);
@@ -210,33 +211,43 @@ void InputAudio::streamAudio(const float maxDuration) {
         (void)pOutput;
     };
 
+    ma_hpf_config hpFilterConfig;
+    ma_lpf_config lpFilterConfig;
+    ma_bpf_config bpFilterConfig;
+
+    // Initilise filters
+    if (isVerbose) std::cout << "Initilising Filters" << std::endl;
+    for (auto& f : ctx.filters) {
+        switch (f.type) {
+            case Audio::Filter::HPF:
+                hpFilterConfig = ma_hpf_config_init(ma_format_f32, channels, sampleRate, f.cutoff, f.order);
+                if (ma_hpf_init(&hpFilterConfig, nullptr, &f.hpf) != MA_SUCCESS) {
+                    throw std::runtime_error("Failed to initialise High Pass Filter.");
+                }
+            break;
+            case Audio::Filter::LPF:
+                lpFilterConfig = ma_lpf_config_init(ma_format_f32, channels, sampleRate, f.cutoff, f.order);
+                if (ma_lpf_init(&lpFilterConfig, nullptr, &f.lpf) != MA_SUCCESS) {
+                    throw std::runtime_error("Failed to initialise Low Pass Filter.");
+                }
+            break;
+            case Audio::Filter::BANDPF:
+                bpFilterConfig = ma_bpf_config_init(ma_format_f32, channels, sampleRate, f.cutoff, f.order);
+                if (ma_bpf_init(&bpFilterConfig, nullptr, &f.bpf) != MA_SUCCESS) {
+                    throw std::runtime_error("Failed to initialise Low Pass Filter.");
+                }
+            break;
+            default:
+                f.type = Audio::Filter::NONE;
+            break;
+        }
+    }
+
     void *pRead = nullptr;
     size_t readBytes = 0;
     size_t requestedBytes = sampleRate * channels * maxDuration * sizeof(float);
     targetSamples = sampleRate * channels * maxDuration;
-
-    // Initilise filters
-    if (isVerbose) std::cout << "Initilising Filters" << std::endl;
-    switch (filter.type) {
-        case Audio::Filter::HPF:
-            if (ma_hpf_init(&hpFilterConfig, nullptr, &ctx.hpf) != MA_SUCCESS) {
-                throw std::runtime_error("Failed to initialise High Pass Filter.");
-            }
-        break;
-        case Audio::Filter::LPF:
-            if (ma_lpf_init(&lpFilterConfig, nullptr, &ctx.lpf) != MA_SUCCESS) {
-                throw std::runtime_error("Failed to initialise Low Pass Filter.");
-            }
-        break;
-        case Audio::Filter::BANDPF:
-            if (ma_bpf_init(&bpFilterConfig, nullptr, &ctx.bpf) != MA_SUCCESS) {
-                throw std::runtime_error("Failed to initialise Low Pass Filter.");
-            }
-        default:
-            ctx.type = Audio::Filter::NONE;
-        break;
-    }
-
+    
     if (isVerbose) std::cout << "Initilsing ring buffer" << std::endl;
     if (ma_rb_init(sampleRate * channels * maxDuration * sizeof(float), nullptr, nullptr, &ctx.ringBuffer) != MA_SUCCESS) {
         throw std::runtime_error("Failed to start ring buffer.");
@@ -250,7 +261,7 @@ void InputAudio::streamAudio(const float maxDuration) {
         throw std::runtime_error("Failed to start audio device.");
     }
 
-    while(running) {
+    while(aRunning.load()) {
         readBytes = requestedBytes;
        if (readBytes > 0) {
             if (ma_rb_acquire_read(&ctx.ringBuffer, &readBytes, &pRead) != MA_SUCCESS) {
@@ -280,16 +291,18 @@ void InputAudio::streamAudio(const float maxDuration) {
     ma_device_uninit(&device);
 
     // Uninitilise filters
-    switch (filter.type) {
-        case Audio::Filter::HPF:
-            ma_hpf_uninit(&ctx.hpf, nullptr);
-        break;
-        case Audio::Filter::LPF:
-            ma_lpf_uninit(&ctx.lpf, nullptr);
-        break;
-        case Audio::Filter::BANDPF:
-            ma_bpf_uninit(&ctx.bpf, nullptr);
-        break;
+    for (auto& f : ctx.filters) {
+        switch (f.type) {
+            case Audio::Filter::HPF:
+                ma_hpf_uninit(&f.hpf, nullptr);
+            break;
+            case Audio::Filter::LPF:
+                ma_lpf_uninit(&f.lpf, nullptr);
+            break;
+            case Audio::Filter::BANDPF:
+                ma_bpf_uninit(&f.bpf, nullptr);
+            break;
+        }
     }
     ma_rb_uninit(&ctx.ringBuffer);
     deviceConfig.dataCallback = nullptr;
@@ -321,4 +334,32 @@ void InputAudio::clearData() {
 
     audioData.clear();
     dataReady = false;
+}
+
+
+void InputAudio::addFilter(const Audio::Filter type, const double cutoff, const ma_uint32 order) {
+    Filter tempFilter;
+    tempFilter.type = type;
+    tempFilter.cutoff = cutoff;
+    tempFilter.order = order;
+    ctx.filters.push_back(tempFilter);
+}
+
+
+float Audio::goertzel(const std::vector<float>& samples, const float targetFreq, const float sampleRate) {
+    int N = samples.size();
+    int k = (int) (0.5 + ((N * targetFreq) / sampleRate));
+    float w = ((2.0 * M_PI) / N) * k;
+    float cosine = cos(w);
+    float coeff = 2.0 * cosine;
+
+    float q0 = 0, q1 = 0, q2 = 0;
+
+    for (float sample : samples) {
+        q0 = coeff * q1 - q2 + sample;
+        q2 = q1;
+        q1 = q0;
+    }
+
+    return q1 * q1 + q2 * q2 - coeff * q1 * q2;
 }
