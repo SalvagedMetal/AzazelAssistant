@@ -20,6 +20,7 @@ void InputAudio::recordAudio(const float duration) {
     // Initilise callback
     deviceConfig.dataCallback = [](ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
         auto *ctx = (AudioContext*)pDevice->pUserData;
+        ctx->tempBuffer.resize(frameCount * ctx->channels);
         const float *input = (const float*)pInput; // so that previous filters don't overwrite eachother
         
         if (ctx->filters.empty()) {
@@ -174,6 +175,7 @@ void InputAudio::streamAudio(const float maxDuration) {
         auto *ctx = (AudioContext*)pDevice->pUserData;
         // allocate size
         size_t byteSize = frameCount * ctx->channels * sizeof(float);
+        ctx->tempBuffer.resize(frameCount * ctx->channels);
         void *pWrite = nullptr;
         const float *input = (const float*)pInput; // so that previous filters don't overwrite eachother
 
@@ -245,7 +247,13 @@ void InputAudio::streamAudio(const float maxDuration) {
 
     void *pRead = nullptr;
     size_t readBytes = 0;
-    size_t requestedBytes = sampleRate * channels * maxDuration * sizeof(float);
+    size_t requestedBytes = 0;
+    if (VADEnable) {
+        requestedBytes = sampleRate * channels * 0.03 * sizeof(float);
+    } else {
+       requestedBytes = sampleRate * channels * maxDuration * sizeof(float);
+
+    }
     targetSamples = sampleRate * channels * maxDuration;
     
     if (isVerbose) std::cout << "Initilsing ring buffer" << std::endl;
@@ -261,29 +269,89 @@ void InputAudio::streamAudio(const float maxDuration) {
         throw std::runtime_error("Failed to start audio device.");
     }
 
+    float noiseFloor = 0.0001f;
+    bool speech = false;
+    int speechFrames = 0;
+    int silenceFrames = 0;
+    int sampleEnergy = 0;
+
     while(aRunning.load()) {
         readBytes = requestedBytes;
-       if (readBytes > 0) {
-            if (ma_rb_acquire_read(&ctx.ringBuffer, &readBytes, &pRead) != MA_SUCCESS) {
-                throw std::runtime_error("Failed to read ring buffer");
-            }
+        pRead = nullptr;
 
-            float *samples = (float*)pRead;
-            int sampleCount = readBytes / (sizeof(float) * channels);
+        if (ma_rb_acquire_read(&ctx.ringBuffer, &readBytes, &pRead) != MA_SUCCESS) {
+            throw std::runtime_error("Failed to read ring buffer");
+        }
+        // skip until data is given
+        if (readBytes == 0 || pRead == nullptr) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            continue;
+        }
+
+        float *samples = (float*)pRead;
+        int sampleCount = readBytes / sizeof(float);
+        if (VADEnable) {
+            float energy = 0.0f;
+
+            for (int i = 0; i < sampleCount; i++) {
+                float s = samples[i];
+                energy += s * s;
+            }
+            energy /= sampleCount;
+
+            // adaptive noise floor so that background noise gets filtered out
+            noiseFloor = (0.95f * noiseFloor) + (0.05f * energy);
+
+            float threshold = noiseFloor * VADThresholdMult;
+
+            bool detected = energy > threshold;
+            if ((sampleEnergy % 10) == 0) {
+                if (isVerbose) std::cout << "energy: " << energy << std::endl;
+            }
+            if (detected) {
+                speechFrames++;
+                silenceFrames = 0;
+                if (isVerbose) std::cout << "Speech detected" << std::endl;
+            } else {
+                silenceFrames++;
+                speechFrames = 0;
+            }
+            sampleEnergy++;
+
+            // Speech start
+            if (!speech && speechFrames >= VADSpeechTriggerFrames) {
+                speech = true;
+                if (isVerbose) std::cout << "Speech started\n";
+            }
+            // Collect speech
+            if (speech) {
+                std::lock_guard<std::mutex> lock(data_mtx);
+                audioData.insert(audioData.end(), samples, samples + sampleCount);
+            }
+            // Speech end
+            if (speech && silenceFrames >= VADSilenceTriggerFrames) {
+                speech = false;
+                dataReady = true;
+                data_cv.notify_all();
+                if (isVerbose) std::cout << "Speech ended\n";
+            }
+        } else {
             {
                 std::lock_guard<std::mutex> lock(data_mtx);
                 audioData.insert(audioData.end(), samples, samples + sampleCount);
             }
-            if ((audioData.size() >= targetSamples) && !dataReady) {
+                if ((audioData.size() >= targetSamples) && !dataReady) {
                 dataReady = true;
                 data_cv.notify_all();
+                if (isVerbose) std::cout << "Speech saved\n";
             }
-            if (ma_rb_commit_read(&ctx.ringBuffer, readBytes) != MA_SUCCESS ) {
-                throw std::runtime_error("Failed to commit ring buffer read");
-            }
+        }
+        if (ma_rb_commit_read(&ctx.ringBuffer, readBytes) != MA_SUCCESS ) {
+            throw std::runtime_error("Failed to commit ring buffer read");
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
+    pRead = nullptr;
 
     if (ma_device_stop(&device) != MA_SUCCESS) {
         throw std::runtime_error("Failed to stop audio device.");
@@ -312,7 +380,7 @@ void InputAudio::streamAudio(const float maxDuration) {
 std::vector<float> InputAudio::moveStreamedAudioData() {
     std::unique_lock<std::mutex> lock(data_mtx);
 
-    data_cv.wait(lock, [&] { return audioData.size() >= targetSamples; });
+    data_cv.wait(lock, [&] { return (audioData.size() >= targetSamples) || dataReady; });
     dataReady = false;
 
     return std::move(audioData);
@@ -363,3 +431,11 @@ float Audio::goertzel(const std::vector<float>& samples, const float targetFreq,
 
     return q1 * q1 + q2 * q2 - coeff * q1 * q2;
 }
+
+
+void InputAudio::setVAD(const float mult, const int speechTrig, const int silenceTrig) {
+    VADThresholdMult = mult;
+    VADSilenceTriggerFrames = silenceTrig;
+    VADSpeechTriggerFrames = speechTrig;
+}
+

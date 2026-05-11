@@ -35,6 +35,10 @@ private:
     bool isVerbose = false;
     std::atomic<bool> aRunning = true;
     int targetSamples = 0;
+    bool VADEnable = false;
+    float VADThresholdMult = 3.5f;
+    int VADSpeechTriggerFrames = 3;
+    int VADSilenceTriggerFrames = 50;
 
     // struct for filtering
     struct Filter {
@@ -86,6 +90,8 @@ public:
     void setSampleRate(const ma_uint32 sr) {sampleRate = sr; }
     void setAudioData(const std::vector<float> ad) { audioData = ad; } 
     void setRunning(const bool run) { aRunning.store(run); }
+    void setVADEnable(const bool en) { VADEnable = en; }
+    void setVAD(const float mult, const int speechTrig, const int silenceTrig); // Defined in inputAudio.cpp
 
     std::vector<float> getAudioData(); // defined in inputAudio.cpp
     std::vector<float> moveStreamedAudioData(); // defined in inputAudio.cpp
@@ -94,7 +100,12 @@ public:
     ma_uint32 getSampleRate() { return sampleRate; }
     ma_uint32 getChannels() { return channels; }
     float getGain() { return gain; }
-    bool setRunning() { return aRunning.load(); }
+    bool getRunning() { return aRunning.load(); }
+    bool getVADEnable() { return VADEnable; }
+    float getVADThresholdMult() { return VADThresholdMult; }
+    int getVADSpeechTriggerFrames() { return VADSpeechTriggerFrames; }
+    int getVADSilenceTriggerFrames() { return VADSilenceTriggerFrames; }
+
 };
 
 
