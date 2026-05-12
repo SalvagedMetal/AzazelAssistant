@@ -30,7 +30,7 @@ set(LIB_DIR lib/miniaudio/miniaudio.c lib/miniaudio/miniaudio.h)
 set(SOURCE_DIR src/dateTime.cpp src/dateTime.h src/model.cpp src/model.h 
     src/functionCall.cpp src/commandList.cpp src/functionCall.h
     src/configReader.cpp src/configReader.h src/configVars.h
-    src/mqtt.cpp src/mqtt.h src/voice.cpp src/voice.h src/inputAudio.cpp src/outputAudio.cpp src/audio.h)
+    src/mqtt.cpp src/mqtt.h src/voice.cpp src/voice.h src/inputAudio.cpp src/outputAudio.cpp src/audio.h src/voiceRec.h src/voiceRec.cpp)
 
 set(TEST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin/tests)
 
