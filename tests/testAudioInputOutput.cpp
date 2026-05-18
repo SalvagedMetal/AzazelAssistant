@@ -11,7 +11,8 @@ void testInputRecord() {
     InputAudio testAudio(48000, 1, true);
     testAudio.init();
     testAudio.recordAudio(0.1);
-    testAudio.saveToFile("test_file1.wav", testAudio.getAudioData());
+    auto audioData = testAudio.moveAudioData();
+    testAudio.saveToFile("test_file1.wav", audioData);
 }
 
 void testOutputInit() {
@@ -27,7 +28,8 @@ void testOuputPlayfile() {
     testAudio.init();
 
     testInput.recordAudio(0.1);
-    testInput.saveToFile("test_file2.wav", testInput.getAudioData());
+    auto audioData = testInput.moveAudioData();
+    testInput.saveToFile("test_file2.wav", audioData);
     testAudio.playAudioFile("test_file2.wav");
 }
 
@@ -38,7 +40,8 @@ void testOutputPlayBuffer() {
     testAudio.init();
 
     testInput.recordAudio(0.1);
-    testAudio.playAudioBuffer(testInput.getAudioData());
+    auto audioData = testInput.moveAudioData();
+    testAudio.playAudioBuffer(audioData);
 }
 
 int main() {

@@ -4,15 +4,17 @@
 #include "src/configReader.h"
 #include "src/voice.h"
 #include "src/audio.h"
+#include "src/voiceRec.h"
 
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 
 //shared thread objects
-std::mutex tts_mtx;
-std::condition_variable tts_cv;
+std::mutex tts_mtx, rec_mtx, trnscpt_mtx, command_mtx, streamAudio_mtx;
+std::condition_variable tts_cv, rec_cv, trnscpt_cv, command_cv, streamAudio_cv;
 
 int main(int argc, char *argv[]) {
 
@@ -21,8 +23,14 @@ int main(int argc, char *argv[]) {
     std::string userInput, input;
     std::string commandInitMessage;
     bool isVerbose = false;
-    bool retry = false;
+    std::atomic<bool> aRetry = false;
+    bool StreamAudio = true;
     bool ttsEnabled = true;
+    std::atomic<bool> wakeWord = false;
+    std::queue<std::vector<float>> theVoices;
+    std::queue<std::vector<float>> voiceRecording;
+    std::queue<std::string> commands;
+    std::vector<std::string> wakeWords;
 
     ConfigVars::config config;
     ConfigVars::MQTTConfig mqttConfig;
@@ -34,7 +42,7 @@ int main(int argc, char *argv[]) {
     Voice voice;
     InputAudio recordVoice;
     OutputAudio ttsPlayback;
-    std::queue<std::vector<float>> theVoices;
+    VoiceRecognition transcribeModel;
 
 
 
@@ -65,6 +73,13 @@ int main(int argc, char *argv[]) {
     }
     config = configReader.getConfig();
 
+    // Initilise Wakewords
+    // Only threadsafe if only read in Transcript Thread
+    for (auto ww : config.wakeWords) {
+        wakeWords.push_back(ww);
+        if (isVerbose) std::cout << "pushing wakeword: " << ww << std::endl;
+    }
+
     // Initialize MQTT client
     mqttConfig = configReader.getMQTTConfig();
 
@@ -88,17 +103,30 @@ int main(int argc, char *argv[]) {
     }
 
     // Initialise audio
-    if (config.audio.enabled) {
+    if (config.audioEnable) {
         std::cout << "Initialising audio... ";
-        recordVoice.setChannels(config.audio.channels);
-        recordVoice.setDuration(5.0f);
-        recordVoice.setGain(config.audio.gain);
-        recordVoice.setSampleRate(config.audio.sampleRate);
-        recordVoice.setIsVerbose(isVerbose);
-        
-        ttsPlayback.setChannels(config.audio.channels);
-        ttsPlayback.setSampleRate(config.voice.sample_rate);
-        ttsPlayback.setIsVerbose(isVerbose);
+        for (auto &a : config.audio) {
+            if (a.function == "playback") {
+                if (isVerbose) std::cout << "Initilsing playback audio" << std::endl;
+                ttsPlayback.setChannels(a.channels);
+                ttsPlayback.setSampleRate(a.sampleRate);
+                ttsPlayback.setIsVerbose(isVerbose);
+            } else if (a.function == "inputStream") {
+                if (isVerbose) std::cout << "Initilsing inputStream audio" << std::endl;
+                recordVoice.setChannels(a.channels);
+                recordVoice.setDuration(a.duration);
+                recordVoice.setGain(a.gain);
+                recordVoice.setSampleRate(a.sampleRate);
+                recordVoice.setVADEnable(a.VADEnabled);
+                recordVoice.setVAD(a.VADThresholdMult, a.VADSpeechTriggerFrames, a.VADSilenceTriggerFrames);
+                recordVoice.setIsVerbose(isVerbose);
+                for (auto &f : a.filters) {
+                    if (isVerbose) std::cout << "Initilsing inputStream audio filters" << std::endl;
+                    recordVoice.addFilter(f.type, f.cutoff, f.order);
+                }
+            }
+        }
+
         try {
             recordVoice.init();
             ttsPlayback.init();
@@ -177,7 +205,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Done." << std::endl;
     }
 
-    // Initialize TTS voice synthesizer
+    // Initialise TTS voice synthesizer
     if (ttsEnabled && config.voice.enabled) {
         std::cout << "Initialising voice synthesiser... ";
         // setting voice config
@@ -200,6 +228,32 @@ int main(int argc, char *argv[]) {
         std::cout << "Done." << std::endl;
     }
 
+    //Initilise Voice Recognition
+    if (config.voiceRec.enabled) {
+        std::cout << "Initilising Voice Transcript... ";
+        transcribeModel.setFilePath(config.voiceRec.filePath);
+        transcribeModel.setLanguage(config.voiceRec.language);
+        transcribeModel.setMaxLen(config.voiceRec.max_len);
+        transcribeModel.setNoContext(config.voiceRec.no_context);
+        transcribeModel.setNoSpeechThreshold(config.voiceRec.no_speech_thold);
+        transcribeModel.setNoTimestamps(config.voiceRec.no_timestamps);
+        transcribeModel.setPrintProgress(config.voiceRec.print_progress);
+        transcribeModel.setPrintRealtime(config.voiceRec.print_realtime);
+        transcribeModel.setPrintSpecial(config.voiceRec.print_special);
+        transcribeModel.setPrintTimestamps(config.voiceRec.print_timestamps);
+        transcribeModel.setThreadCount(config.voiceRec.n_thread);
+        transcribeModel.setSingleSegment(config.voiceRec.single_segment);
+        transcribeModel.setTranslate(config.voiceRec.translate);
+        transcribeModel.setUseGPU(config.voiceRec.use_gpu);
+        try {
+            transcribeModel.init();
+        } catch (const std::exception &e) {
+            std::cerr << "Error initialising Voice Transcript: " << e.what() << std::endl;
+            return 1;
+        }
+        std::cout << "Done." << std::endl;
+    }
+
     // Initialize function calls
     try {
         std::cout << "Initialising function calls... ";
@@ -211,7 +265,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Done." << std::endl;
 
 
-    // Set up thread loops
+    // Thread loops
     std::thread ttsThread([&ttsPlayback, &theVoices] {
         while(true) {
             std::vector<float> playBack;
@@ -225,18 +279,85 @@ int main(int argc, char *argv[]) {
             ttsPlayback.playAudioBuffer(playBack);
         }
     });
+    std::thread streamVoiceThread([&recordVoice, &StreamAudio] {
+        while(true) {
+            recordVoice.streamAudio(10);
+        }
+    });
+    std::thread captureVoiceThread([&recordVoice, &voiceRecording] {
+        while(true) {
+            {
+                std::lock_guard<std::mutex> lock(trnscpt_mtx);
+                auto data = recordVoice.moveStreamedAudioData();
+                voiceRecording.push(data);
+                trnscpt_cv.notify_one();
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100)); //Ease up on CPU
+        }
+    });
+    std::thread transcribeThread([&voiceRecording, &transcribeModel, &commands, isVerbose, &wakeWord, &wakeWords, &recordVoice] {
+        std::vector<float> data;
+        std::string transcript;
+        std::unique_ptr<FunctionCall::ParsedPhrase> output;
+        while(true) {
+            {
+                std::unique_lock<std::mutex> lock(trnscpt_mtx);
+                trnscpt_cv.wait(lock, [&voiceRecording] { return !voiceRecording.empty(); });
+                data = voiceRecording.front();
+                voiceRecording.pop();
+            }
+            try {
+                transcribeModel.transcribe(data);
+            } catch (const std::exception &e) {
+                std::cerr << "Error Transcribing Text: " << e.what() << std::endl;
+                return 1;
+            }
+            transcript = transcribeModel.getTranscript();
+            if (isVerbose) std::cout << "Transcribed text: " << transcript << std::endl;
+            data.clear();
+            bool ww = wakeWord.load();
+            if (isVerbose) std::cout << "WakeWord: " << ww << std::endl;
+            if (ww) {
+                std::lock_guard<std::mutex> lock(command_mtx);
+                commands.push(transcript);
+                command_cv.notify_one();
+            } else {
+                for (auto &ww : wakeWords) {
+                    if (transcript == ww) {
+                        if(isVerbose) std::cout << "WakeWord called: " << ww << std::endl;
+                        wakeWord.store(true);
+                    }
+                }
+                if (isVerbose && !wakeWord) std::cout << "could not find wakeWord" << std::endl;
+            }
+        }
+    });
+    bool modelEnable = config.ModelEnable;
+    std::thread textInputThread([&aRetry, modelEnable, &commands] {
+        std::string input = "";
+        while (true) {
+            bool retry = aRetry.load();
+            if (!retry || !modelEnable) {
+                std::cout << "> ";
+                getline(std::cin, input);
+                {
+                    std::lock_guard<std::mutex> lock(command_mtx);
+                    commands.push(input);
+                    command_cv.notify_one();
+                }
+                input = "";
+            }
+        }
+    });
 
     std::cout << "Azazel Assistant v0.4 is running...\n";
 
 
     // Main loop
     while (true) {
-        if (!retry || !config.ModelEnable) {
-            std::cout << "> ";
-            getline(std::cin, userInput);
-            input = userInput;
-            if (userInput == "quit" || userInput == "q") break;
-        } else {
+        bool retry = aRetry.load();
+        if (retry && config.ModelEnable) {
+            // Retry with LLM
             if (isVerbose) std::cout << "Retrying with AI parsed command..." << std::endl;
             try {
                     input = commandModel.respond(userInput);
@@ -246,6 +367,15 @@ int main(int argc, char *argv[]) {
             }
             if (isVerbose) std::cout << "AI parsed command: " << input << std::endl;
         }
+        {
+            std::unique_lock<std::mutex> lock(command_mtx);
+            command_cv.wait(lock, [&commands] { return !commands.empty(); });
+
+            input = commands.front();
+            commands.pop();
+        }
+        if (userInput == "quit" || userInput == "q") break;
+        // command parsing
         if (FunctionCall::parsePhrase(input, parsedPhrasePtr, configReader.getCommandCalls(), isVerbose)) {
             if (isVerbose) {
                 std::cout << "Command: " << parsedPhrasePtr->command << std::endl;
@@ -290,12 +420,17 @@ int main(int argc, char *argv[]) {
                 }
                 tts_cv.notify_one();
             }
-            retry = false;
+            aRetry.store(false);
         }
+        wakeWord.store(false);
         input = "";
         parsedPhrasePtr = nullptr;
         response = "";
     }
     ttsThread.join();
+    streamVoiceThread.join();
+    captureVoiceThread.join();
+    transcribeThread.join();
+    textInputThread.join();
     return 0;
 }

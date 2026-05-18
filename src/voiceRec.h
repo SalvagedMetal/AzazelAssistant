@@ -14,7 +14,7 @@ private:
     struct whisper_context *ctx;
 
     bool isVerbose = false;
-    std::string fileName = "ggml-tiny.en.bin";
+    std::string filePath = "models/ggml-tiny.en.bin";
     std::string transcript = "";
 
     // Parameter variables
@@ -41,9 +41,8 @@ public:
     void clear();
 
     // Getters and Setters
-
     bool getVerbose() const { return isVerbose; }
-    const std::string& getFileName() const { return fileName; }
+    const std::string& getFilePath() const { return filePath; }
     const std::string& getTranscript() const { return transcript; }
     bool getUseGPU() const { return use_gpu; }
     float getNoSpeechThreshold() const { return no_speech_thold; }
@@ -60,7 +59,7 @@ public:
     bool getPrintTimestamps() const { return print_timestamps; }
 
     void setVerbose(bool value) { isVerbose = value; }
-    void setFileName(const std::string& value) { fileName = value; }
+    void setFilePath(const std::string& value) { filePath = value; }
     void setTranscript(const std::string& value) { transcript = value; }
     void setUseGPU(bool value) { use_gpu = value; }
     void setNoSpeechThreshold(float value) { no_speech_thold = value; }

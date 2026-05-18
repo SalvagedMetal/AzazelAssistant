@@ -1,6 +1,8 @@
 #ifndef CONFIGVARS_H
 #define CONFIGVARS_H
 
+#include "audio.h"
+
 namespace ConfigVars {
     struct Model {
         std::string name;
@@ -64,19 +66,47 @@ namespace ConfigVars {
 
     struct AudioConfig {
         bool enabled;
+        std::string function;
         uint32_t channels;
         uint32_t sampleRate;
         int gain;
+        float duration;
+        bool VADEnabled;
+        float VADThresholdMult;
+        int VADSpeechTriggerFrames;
+        int VADSilenceTriggerFrames;
+        std::vector<Audio::Filter> filters;
+    };
+
+    struct VoiceRecConfig {
+        bool enabled;
+        std::string filePath;
+        std::string language;
+        bool use_gpu;
+        float no_speech_thold;
+        int max_len;
+        bool translate;
+        int n_thread;
+        bool no_context;
+        bool no_timestamps;
+        bool single_segment;
+        bool print_progress;
+        bool print_realtime;
+        bool print_special;
+        bool print_timestamps;
     };
     
     // Overall configuration structure
     struct config {
         bool ModelEnable;
+        bool audioEnable;
         std::vector<Model> models;
         MQTTConfig mqtt;
         std::vector<Commands> commandCalls;
         VoiceConfig voice;
-        AudioConfig audio;
+        std::vector<AudioConfig> audio;
+        std::vector<std::string> wakeWords;
+        VoiceRecConfig voiceRec;
     };
 };
 

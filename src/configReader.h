@@ -12,6 +12,7 @@
 #include "configVars.h"
 #include "model.h"
 #include "mqtt.h"
+#include "audio.h"
 
 using json = nlohmann::json;
 
@@ -22,7 +23,8 @@ private:
     std::vector<ConfigVars::Model> models;
     ConfigVars::MQTTConfig mqtt;
     std::vector<ConfigVars::MQTTCommand> mqttCommands;
-    ConfigVars::AudioConfig audio;
+    std::vector<ConfigVars::AudioConfig> audio;
+    ConfigVars::VoiceRecConfig voiceRec;
     ConfigVars::config config;
 public:
     /*  
@@ -43,7 +45,8 @@ public:
     const std::vector<ConfigVars::Commands> getCommandCalls() const;
     const ConfigVars::VoiceConfig getVoiceConfig() const;
     const std::string getConfigData() const;
-    const ConfigVars::AudioConfig getAudioConfig() const;
+    const std::vector<ConfigVars::AudioConfig> getAudioConfig() const;
+    const ConfigVars::VoiceRecConfig getVoiceRecConfig() const;
 };
 
 #endif

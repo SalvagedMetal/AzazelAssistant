@@ -16,11 +16,22 @@
 #include "../lib/miniaudio/miniaudio.h"
 
 namespace Audio {
-    enum Filter {
+    enum FilterType {
         NONE = 0,
         HPF,
         LPF,
         BANDPF
+    };
+    // struct for filtering
+    struct Filter {
+        FilterType type;
+        double cutoff;
+        ma_uint32 order;
+        union {
+            ma_lpf lpf;
+            ma_hpf hpf;
+            ma_bpf bpf;
+        };
     };
     // Goertzel DFT Algorithm, returns magnitude of traget frequency
     float goertzel(const std::vector<float>& samples, const float targetFreq, const float sampleRate);
@@ -40,18 +51,6 @@ private:
     int VADSpeechTriggerFrames = 3;
     int VADSilenceTriggerFrames = 50;
 
-    // struct for filtering
-    struct Filter {
-        Audio::Filter type;
-        double cutoff;
-        ma_uint32 order;
-        union {
-            ma_lpf lpf;
-            ma_hpf hpf;
-            ma_bpf bpf;
-        };
-    };
-
     // Sound capture object variables
     ma_device_config deviceConfig;
     ma_device device;
@@ -62,7 +61,7 @@ private:
         std::vector<float> audioBuffer, tempBuffer;
         ma_uint32 channels;
         ma_rb ringBuffer;
-        std::vector<Filter> filters;
+        std::vector<Audio::Filter>filters;
     };
     AudioContext ctx;
 
@@ -80,7 +79,7 @@ public:
     void saveToFile(const char* filename, const std::vector<float> &data);
     void init();
     void clearData();
-    void addFilter(const Audio::Filter type, const double cutoff, const ma_uint32 order);
+    void addFilter(const Audio::FilterType type, const double cutoff, const ma_uint32 order);
 
     // Getters and Setters
     void setGain(const int gn) { gain = gn; }
@@ -93,7 +92,7 @@ public:
     void setVADEnable(const bool en) { VADEnable = en; }
     void setVAD(const float mult, const int speechTrig, const int silenceTrig); // Defined in inputAudio.cpp
 
-    std::vector<float> getAudioData(); // defined in inputAudio.cpp
+    std::vector<float> moveAudioData(); // defined in inputAudio.cpp
     std::vector<float> moveStreamedAudioData(); // defined in inputAudio.cpp
     ma_device_config getdeviceConfig() { return deviceConfig; }
     ma_format getFormat() { return deviceConfig.capture.format; }
@@ -141,7 +140,6 @@ public:
 
     // Getters and Setters
     void setVolumeScale(const float vs) { volumeScale = vs; }
-    void boolIsVerbose(const bool vb) { isVerbose = vb; }
     void setChannels(const ma_uint32 ch) { channels = ch; }
     void setSampleRate(const ma_uint32 sr) {sampleRate = sr; }
     void setAudioBuffer(const std::vector<float> ab) { audioBuffer = ab; }

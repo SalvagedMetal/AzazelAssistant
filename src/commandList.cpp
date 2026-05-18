@@ -184,7 +184,7 @@ void FunctionCall::initCommands(const ConfigVars::config& config, MQTTClient* mq
         }
     });
 
-    if (config.audio.enabled) {
+    if (config.audioEnable) {
         if (isVerbose) std::cout << "Pushing setVolume command" << std::endl;
         commandList.push_back({
             "setVolume", 1, {"Float"}, voice,
