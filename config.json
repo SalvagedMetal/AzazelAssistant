@@ -1,5 +1,37 @@
 {
+    "audioEnabled": true,
+    "audio": [
+        {
+            "function": "playback",
+            "channels": 1,
+            "sample_rate": 22050
+        },
+        {
+            "function": "inputStream",
+            "channels": 1,
+            "gain": 10,
+            "duration": 5,
+            "sample_rate": 16000,
+            "vad_enabled": true,
+            "vad_threshold_mult": 3,
+            "vad_speech_trigger_frames": 3,
+            "vad_silence_trigger_frames": 50,
+            "filters" : [
+                {
+                    "type": "hpf",
+                    "cutoff_freq": 600,
+                    "filter_order": 2
+                },
+                {
+                    "type": "lpf",
+                    "cutoff_freq": 3300,
+                    "filter_order": 2
+                }
+            ]
+        }
+    ],
     "modelEnabled": true,
+    "wakeWords": ["Assistant.", "Hey assistant.", "Hey, assistant.", "Hi assistant."],
     "models": [
         {
             "name": "Phi-4-mini-instruct-Q6_K_L",
@@ -148,7 +180,6 @@
 
             ]
         }
-
     ],
     "voice": {
         "name": "AzazelVoice",
@@ -160,6 +191,23 @@
         "length_scale": 1.0,
         "noise_scale": 0.667,
         "noise_scale_w": 0.8,
-        "output_file": "output.raw"
+        "gain" : 10
+    },
+    "voiceRecognition": {
+        "enabled": true,
+        "model_path": "models/ggml-tiny.en.bin",
+        "use_gpu": false,
+        "max_len": 50,
+        "no_speech_threshold": 0.3,
+        "translate": false,
+        "n_thread": 4,
+        "no_context": true,
+        "no_timestamps": true,
+        "single_segment": false,
+        "language": "english",
+        "print_progress": false,
+        "print_realtime": false,
+        "print_special": false,
+        "print_timestamps": false
     }
 }

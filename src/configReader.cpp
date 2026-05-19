@@ -26,6 +26,63 @@ void ConfigReader::parseConfig() {
         return;
     }
 
+    // Parse Audio
+    if (!configJson.contains("audio") || !configJson["audio"].is_array())
+        throw std::runtime_error("Config JSON does not contain 'audio' array");
+    if (configJson.contains("audioEnabled")) {
+        config.audioEnable = configJson.value("audioEnabled", false);
+    } else {
+        config.audioEnable = false; // Default to false if not specified
+    }
+    for (const auto &audioJson : configJson["audio"]) {
+        if (!audioJson.is_object()) {
+            throw std::runtime_error("Audio entry is not an object");
+        }
+
+        ConfigVars::AudioConfig audio;
+        audio.function = audioJson.value("function", "");
+        audio.channels = audioJson.value("channels", 1);
+        audio.sampleRate = audioJson.value("sample_rate", 0);
+        audio.gain = audioJson.value("gain", 0);
+        audio.duration = audioJson.value("duration", 0);
+        audio.VADEnabled = audioJson.value("vad_enabled", false);
+        audio.VADThresholdMult = audioJson.value("vad_threshold_mult", 1);
+        audio.VADSpeechTriggerFrames = audioJson.value("vad_speech_trigger_frames", 0);
+        audio.VADSilenceTriggerFrames = audioJson.value("vad_silence_trigger_frames", 0);
+
+        if (audioJson.contains("filters") && audioJson["filters"].is_array()) {
+            for (const auto &filterJson : audioJson["filters"]) {
+                Audio::Filter filter;
+                std::string type = filterJson.value("type", "none");
+
+                if (type == "hpf") {
+                    filter.type = Audio::FilterType::HPF;
+                } else if (type == "lpf") {
+                    filter.type = Audio::FilterType::LPF;
+                } else if (type == "bpf") {
+                    filter.type = Audio::FilterType::BANDPF;
+                } else {
+                    filter.type = Audio::FilterType::NONE;
+                }
+                filter.cutoff = filterJson.value("cutoff_freq", 0);
+                filter.order = filterJson.value("filter_order", 0);
+
+                audio.filters.push_back(filter);
+            }
+        }
+        config.audio.push_back(audio); 
+    }
+
+    // Parse WakeWords
+    if (!configJson.contains("wakeWords") || !configJson["wakeWords"].is_array()) {
+        throw std::runtime_error("Config JSON does not contain 'wakeWords' array");
+    }
+    if (configJson.contains("modelEnabled")) {
+        for (auto &wakeWordsJson : configJson["wakeWords"]) {
+            config.wakeWords.push_back(wakeWordsJson);
+        }
+    }
+
     // Parse models
     if (!configJson.contains("models") || !configJson["models"].is_array())
         throw std::runtime_error("Config JSON does not contain 'models' array");
@@ -124,14 +181,37 @@ void ConfigReader::parseConfig() {
         config.voice.model_path = voiceJson.value("model_path", "");
         config.voice.config_path = voiceJson.value("config_path", "");
         config.voice.espeak_data_path = voiceJson.value("espeak_path", "");
-        config.voice.sample_rate = voiceJson.value("sample_rate", 22050);
-        config.voice.output_file = voiceJson.value("output_file", "output.raw");
+        config.voice.gain = voiceJson.value("gain", 0);
+        config.voice.sample_rate = voiceJson.value("sample_rate", 24000);
         config.voice.length_scale = voiceJson.value("length_scale", 1.0f);
         config.voice.noise_scale = voiceJson.value("noise_scale", 0.667f);
         config.voice.noise_w_scale = voiceJson.value("noise_w_scale", 0.8f);
         
     } else {
         throw std::runtime_error("Config JSON does not contain 'voice' object");
+    }
+
+    // Voice Recognition
+    if (configJson.contains("voiceRecognition") && configJson["voiceRecognition"].is_object()) {
+        const auto &voiceRecJson = configJson["voiceRecognition"];
+
+        config.voiceRec.enabled = voiceRecJson.value("enabled", false);
+        config.voiceRec.filePath = voiceRecJson.value("model_path", "");
+        config.voiceRec.use_gpu = voiceRecJson.value("use_gpu", false);
+        config.voiceRec.max_len = voiceRecJson.value("max_len", 50);
+        config.voiceRec.no_speech_thold = voiceRecJson.value("no_speech_threshold", 0);
+        config.voiceRec.translate = voiceRecJson.value("translate", false);
+        config.voiceRec.n_thread = voiceRecJson.value("n_thread", 0);
+        config.voiceRec.no_context = voiceRecJson.value("no_context", false);
+        config.voiceRec.no_timestamps = voiceRecJson.value("no_timestamps", false);
+        config.voiceRec.single_segment = voiceRecJson.value("single_segment", false);
+        config.voiceRec.language = voiceRecJson.value("language", "");
+        config.voiceRec.print_progress = voiceRecJson.value("print_progress", false);
+        config.voiceRec.print_realtime = voiceRecJson.value("print_realtime", false);
+        config.voiceRec.print_special = voiceRecJson.value("print_special", false);
+        config.voiceRec.print_timestamps = voiceRecJson.value("print_timestamps", false);
+    } else {
+        throw std::runtime_error("Config JSON does not contain 'voiceRecognition' object");
     }
 }
 
@@ -156,5 +236,13 @@ const ConfigVars::VoiceConfig ConfigReader::getVoiceConfig() const {
 
 const std::string ConfigReader::getConfigData() const {
     return configData;
+}
+
+const std::vector<ConfigVars::AudioConfig> ConfigReader::getAudioConfig() const {
+    return config.audio;
+}
+
+const ConfigVars::VoiceRecConfig ConfigReader::getVoiceRecConfig() const {
+    return config.voiceRec;
 }
 

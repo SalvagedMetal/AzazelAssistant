@@ -12,6 +12,7 @@
 #include "configVars.h"
 #include "model.h"
 #include "mqtt.h"
+#include "audio.h"
 
 using json = nlohmann::json;
 
@@ -22,13 +23,14 @@ private:
     std::vector<ConfigVars::Model> models;
     ConfigVars::MQTTConfig mqtt;
     std::vector<ConfigVars::MQTTCommand> mqttCommands;
+    std::vector<ConfigVars::AudioConfig> audio;
+    ConfigVars::VoiceRecConfig voiceRec;
     ConfigVars::config config;
-
 public:
     /*  
-        Reads and parses the configuration file at the given file path.
-        std::string& filePath   || Path to the configuration file
-        bool isVerbose          || Whether to print verbose output during reading and parsing
+        \brief Reads and parses the configuration file at the given file path.
+        \param filePath   Path to the configuration file
+        \param isVerbose  Whether to print verbose output during reading and parsing
     */
     void readConfig(const std::string& filePath, const bool isVerbose);
     /*  
@@ -43,6 +45,8 @@ public:
     const std::vector<ConfigVars::Commands> getCommandCalls() const;
     const ConfigVars::VoiceConfig getVoiceConfig() const;
     const std::string getConfigData() const;
+    const std::vector<ConfigVars::AudioConfig> getAudioConfig() const;
+    const ConfigVars::VoiceRecConfig getVoiceRecConfig() const;
 };
 
 #endif

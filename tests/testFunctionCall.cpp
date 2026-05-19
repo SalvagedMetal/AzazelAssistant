@@ -9,14 +9,17 @@
 #include "../src/dateTime.h"
 #include "../src/configReader.h"
 #include "../src/voice.h"
+#include "../src/audio.h"
 
 void testInitCommands(ConfigVars::config config) {
     std::cout << "Testing initCommands..." << std::endl;
     MQTTClient mqttClient;
     Model model;
     Voice voice;
+    InputAudio inputAudio;
+    OutputAudio OutputAudio;
 
-    FunctionCall::initCommands(config, &mqttClient, &model, &voice, true);
+    FunctionCall::initCommands(config, &mqttClient, &model, &voice, &inputAudio, &OutputAudio, true);
     assert(!FunctionCall::commandList.empty());
 }
 
@@ -39,9 +42,9 @@ void testCheckTypo() {
     assert(result == true);
 }
 
-void testCallFunction(ConfigVars::config config, Model& model, MQTTClient& mqttClient, Voice& voice) {
+void testCallFunction(ConfigVars::config config, Model &model, MQTTClient &mqttClient, Voice &voice, InputAudio &inputAudio, OutputAudio &OutputAudio) {
     std::cout << "Testing call function..." << std::endl;
-    FunctionCall::initCommands(config, &mqttClient, &model, &voice, true);
+    FunctionCall::initCommands(config, &mqttClient, &model, &voice, &inputAudio, &OutputAudio, true);
     std::unique_ptr<FunctionCall::ParsedPhrase> parsedPhrase = std::make_unique<FunctionCall::ParsedPhrase>();
     std::vector<FunctionCall::ParsedPhrase> testPhrases;
     std::string expectedString;
@@ -114,6 +117,8 @@ int main(int argc, char *argv[]) {
     Model model;
     MQTTClient mqttClient;
     Voice voice;
+    InputAudio inputAudio;
+    OutputAudio outputAudio;
     std::string modelPath = "../models/microsoft_Phi-4-mini-instruct-Q6_K_L.gguf";
     try {
         configReader.readConfig("../config.json", true); 
@@ -156,13 +161,11 @@ int main(int argc, char *argv[]) {
             voice.setModelPath(voiceModelPath);
             voice.setConfigPath(voiceConfigPath);
             voice.setEspeakDataPath(espeakDataPath);
-            voice.setFrequency(config.voice.sample_rate);
-            voice.setFileName(config.voice.output_file);
+            voice.setSampleRate(config.voice.sample_rate);
             voice.setLengthScale(config.voice.length_scale);
             voice.setNoiseScale(config.voice.noise_scale);
             voice.setNoiseWScale(config.voice.noise_w_scale);
             voice.setVerbose(true);
-            voice.setEnabled(config.voice.enabled);
         try {
             voice.init();
         } catch (const std::exception &e) {
@@ -176,12 +179,12 @@ int main(int argc, char *argv[]) {
         testInitCommands(config);
         testParsedPhraseCreation(config);
         testCheckTypo();
-        testCallFunction(config, model, mqttClient, voice);
-        std::cout << "All tests passed!" << std::endl;
+        testCallFunction(config, model, mqttClient, voice, inputAudio, outputAudio);
     } catch (const std::exception& e) {
         std::cerr << "Test failed: " << e.what() << std::endl;
         return 1;
     }
-   
+    std::cout << "All tests passed!" << std::endl;
+
     return 0;
 }

@@ -4,9 +4,7 @@ OutputAudio::OutputAudio(const ma_uint32 sampleRate, const ma_uint32 channels, c
     sampleRate(sampleRate), channels(channels), isVerbose(isVerbose) {}
 
 void OutputAudio::init() {
-    if (isVerbose) {
-        std::cout << "Starting Ouptut Audio Initilisation" << std::endl;
-    }
+    if (isVerbose) std::cout << "Starting Ouptut Audio Initilisation" << std::endl;
     // Set up device configuration based on whether it's for input (recording) or output (playback)
     deviceConfig = ma_device_config_init(ma_device_type_playback);
     deviceConfig.playback.format   = ma_format_f32;
@@ -17,9 +15,7 @@ void OutputAudio::init() {
 
 // TODO: add different audio formats, currently only wav is supported
 void OutputAudio::playAudioFile(const char* filename) {
-    if (isVerbose) {
-        std::cout << "Starting PlayAudioFile" << std::endl;
-    }
+    if (isVerbose) std::cout << "Starting PlayAudioFile" << std::endl;
     bool errorFlag = false;
     ma_decoder decoder = {0};
     ma_decoder_config decoderConfig;
@@ -102,9 +98,7 @@ void OutputAudio::playAudioFile(const char* filename) {
 
 
 void OutputAudio::playAudioBuffer(const std::vector<float> &samples) {
-    if (isVerbose) {
-        std::cout << "Starting PlayAudioBuffer" << std::endl;
-    }
+    if (isVerbose) std::cout << "Starting PlayAudioBuffer with " << samples.size() << " samples" << std::endl;
     bool errorFlag = false;
     ma_audio_buffer_config bufferConfig;
     ma_audio_buffer buffer = {0};
@@ -146,15 +140,14 @@ void OutputAudio::playAudioBuffer(const std::vector<float> &samples) {
         (void)pInput;
     };
 
-    bufferConfig = ma_audio_buffer_config_init(ma_format_f32, channels, samples.size() / channels, samples.data(), nullptr);    
+    bufferConfig = ma_audio_buffer_config_init(ma_format_f32, channels, samples.size() / channels, samples.data(), nullptr);
+    if (isVerbose) std::cout << "Config Initilised" << std::endl;
     if (ma_audio_buffer_init(&bufferConfig, &buffer) != MA_SUCCESS) {
         throw std::runtime_error("Failed to initialize buffer.");
     }
-
     if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
         throw std::runtime_error("Failed to initialize audio device.");
     }
-
     // Check how long the audio file is and adjust the duration accordingly
     ma_uint64 framesTotal = 0;
     if (ma_audio_buffer_get_length_in_pcm_frames(&buffer, &framesTotal) != MA_SUCCESS) {
@@ -166,6 +159,7 @@ void OutputAudio::playAudioBuffer(const std::vector<float> &samples) {
 
     // Wait until the audio has finished playing
     // TODO: add premature stop functionality and save cursor location (maybe use atomic fetch add/subtract)
+    if (isVerbose) std::cout << "Playing audio" << std::endl;
     while (true) {
         ma_uint64 cursor = 0;
         if (ma_audio_buffer_get_cursor_in_pcm_frames(&buffer, &cursor) != MA_SUCCESS) {
@@ -188,24 +182,4 @@ void OutputAudio::playAudioBuffer(const std::vector<float> &samples) {
     deviceConfig.pUserData = nullptr;
     deviceConfig.dataCallback = nullptr;
     ma_device_uninit(&device);
-}
-
-void OutputAudio::setVolumeScale(const float volumeScale) {
-    this->volumeScale = volumeScale;
-}
-
-ma_format OutputAudio::getFormat() {
-    return deviceConfig.playback.format;
-}
-ma_device_config OutputAudio::getDeviceConfig() {
-    return deviceConfig;
-}
-ma_uint32 OutputAudio::getSampleRate() {
-    return sampleRate;
-}
-ma_uint32 OutputAudio::getChannels() {
-    return channels;
-}
-float OutputAudio::getVolumeScale() {
-    return volumeScale;
 }
