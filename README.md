@@ -1,17 +1,18 @@
 # AzazelAssistant
-## v0.4 The Voices in my Head
-AzazelAssistant is a local, privacy-respecting AI assistant built on top of [llama.cpp](https://github.com/ggml-org/llama.cpp) for efficient LLM inference and [nlohmann/json](https://github.com/nlohmann/json) for lightweight JSON handling. It provides a simple, fast, and extensible interface for interacting with large language models (LLMs) on your own machine—no cloud required. Can send commands to other devices through MQTT protocol.
-
+## v0.5 Core Works
+AzazelAssistant is a local, privacy-respecting AI assistant built on top of serval LLM libaries to be a easily customisable private assistant with command and control over a local MQTT network on a Rasberry Pi 5.
 ---
 
 ## Features
 
 - Runs fully locally (offline support)
-- LLM backend using [llama.cpp](https://github.com/ggml-org/llama.cpp)
+- LLM backend
+- Voice command transcription
+- Text to speech
 - Easy model management via `models/` directory
 - Lightweight C++ architecture
-- JSON-based configuration using [nlohmann/json](https://github.com/nlohmann/json)
-- Designed for speed and simplicity
+- JSON-based configuration
+- Designed for simplicity and customisation
 - MQTT Support for subscribing and publishing for messages to MQTT enabled devices
 
 ---
@@ -26,6 +27,7 @@ These libraries are included manually under a `lib/` subdirectory.
 - [`nlohmann/json`](https://github.com/nlohmann/json): Modern C++ JSON library
 - [`piper TTS`](https://github.com/OHF-Voice/piper1-gpl): TTS library
 - [`Miniaudio`](https://miniaud.io): Library for the audio engine
+- [`whisper.cpp`](https://github.com/ggml-org/whisper.cpp): Library for Voice Transcription
 
 This library is included in the `etc/` directory.
 
@@ -74,6 +76,12 @@ For more information follow the installation guide [here](https://randomnerdtuto
 
 How to use the mosquitto client [here](https://randomnerdtutorials.com/testing-mosquitto-broker-and-client-on-raspbbery-pi)
 
+Install Whisper.cpp in lib/
+```
+git clone https://github.com/ggml-org/whisper.cpp.git
+```
+
+
 ### 3. Download and Install a Model
 
 Install pkgx if you don't already have it:
@@ -97,7 +105,7 @@ clone upstream piper1-gpl
 ```
 git clone https://github.com/OHF-Voice/piper1-gpl.git
 ```
-#create lib/ and move the libpiper subdirectory into it
+create lib/ and move the libpiper subdirectory into it
 ```
 mkdir -p lib
 mv piper1-gpl/libpiper lib/libpiper
@@ -116,6 +124,13 @@ wget -O en_GB-cori-high.onnx "$REPO/en_GB-cori-high.onnx"
 wget -O en_GB-cori-high.onnx.json "$REPO/en_GB-cori-high.onnx.json"
 wget -O MODEL_CARD "$REPO/MODEL_CARD"
 cd -
+```
+
+### Installing Transcribe Model
+In ``` lib/whisper.cpp/ ```
+```
+sh ./models/download-ggml-model.sh tiny.en
+mv models/ggml-tiny.en.bin ../../models
 ```
 
 ## Building the Assistant
@@ -146,6 +161,8 @@ AzazelAssistant/
 ├── lib/
 │   ├── llama.cpp/           # LLM backend
 │   ├── json/                # JSON library
+│   ├── miniaudio/           # Audio Library
+│   ├── whisper.cpp/         # Voice Transcription library
 │   └── libpiper/            # Piper TTS library
 ├── models/                  # Place GGUF and TTS models here
 ├── src/                     # Core source code

@@ -350,7 +350,7 @@ int main(int argc, char *argv[]) {
         }
     });
 
-    std::cout << "Azazel Assistant v0.4 is running...\n";
+    std::cout << "Azazel Assistant v0.5 is running..." << std::endl;
 
 
     // Main loop
